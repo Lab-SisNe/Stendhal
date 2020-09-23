@@ -129,7 +129,7 @@ namespace stendhal
 	{0.0364, 0.001, 0.0034, 0.0005, 0.0277, 0.008, 0.0658, 0.1443}
 	};
       // Number of external connections to the different populations
-      unsigned int K_ext[N_layers] {1600, 1500, 2100, 1900, 2000, 1200, 2900, 2100};
+      unsigned int K_ext[N_layers] {1600, 1500, 2100, 1900, 2000, 1900, 2900, 2100};
       // Factor to scale indegrees
       double K_scaling {1.0};
       // Factor to scale the number of neurons

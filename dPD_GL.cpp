@@ -98,17 +98,20 @@ namespace stendhal
     } // pop
     
     // Calculate number of synapses based on N_scaled and conn_prob
-    // pre pop
-    for (int i=0; i<N_layers; i++) {
-      // post pop
-      for (int j=0; j<N_layers; j++) {
+    // post pop
+    for (int j=0; j<N_layers; j++) {
+      // pre pop
+      for (int i=0; i<N_layers; i++) {
 	// calculate number of synapses
 	double Ca = net_params.conn_prob[j][i];
 	int Npre = N_scaled[i];
 	int Npost = N_scaled[j];
 	K_scaled[j][i] = (unsigned int)std::round(std::log(1.0-Ca)/std::log(1.0-(1.0/(double)(Npre*Npost))));
-      } // post pop
-    } // pre pop
+	std::cout << K_scaled[j][i]
+		  << ", ";
+      } // pre pop
+      std::cout << std::endl;
+    } // post pop
   } // calibrate
 
   // create neuron population
