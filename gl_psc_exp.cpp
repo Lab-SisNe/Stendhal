@@ -67,6 +67,12 @@ namespace stendhal
     prng = rng;
     // pointer to random number distribution
     pudist = dist;
+    // Reset state variables
+    V_m = 0.0;
+    I_exc = 0.0;
+    I_inh = 0.0;
+    I_ext = 0.0;
+    is_ref = 0;
     // set buffer size
     resize_buffer(*size);
     // increment total number of nodes created (static variable)

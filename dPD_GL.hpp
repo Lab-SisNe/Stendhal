@@ -144,7 +144,7 @@ namespace stendhal
       double bg_rate {8.0};
       // Flag to turn ON or OFF poissonian background input
       // when false, use DC
-      bool poisson_input {false};
+      bool poisson_input {true};
       // mean delay of excitatory connections (in ms)
       double mean_delay_exc {1.5};
       // mean delay of inhibitory connections (in ms)
