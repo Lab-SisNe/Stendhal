@@ -30,6 +30,7 @@ Aug 11, 2020
 #include <vector>
 #include <string>
 #include <sstream>
+//#include <chrono>
 
 // Include stendhal headers
 #include "dPD_GL.hpp"
@@ -51,27 +52,12 @@ namespace stendhal
     // Seed random number generator
     rng.seed(seed);
 
-    // Calculate auxiliary parameters
-    calibrate();
-    
-    // Initialize network
-    // Create neuron population
-    create_pop();
-    
-    // Create connection
-    double d_max = connect() + sim_params.delta_t;
-
-    // update buffer size if d_max larger than current buffer_size
-    if (d_max > (buffer_size*sim_params.delta_t))
-      update_buffer_size(d_max);
-
     // open output file;
     spike_recorder.open(spike_recorder_file);
     spike_recorder << "dt = " << sim_params.delta_t << '\n';
     spike_recorder << "time,  neuron_ID,  V_m\n";
     
   } // class dPD_DL constructor
-
 
   // dPD_GL destructor
   dPD_GL::~dPD_GL()
@@ -128,7 +114,7 @@ namespace stendhal
   } // create pop
 
   // Create connection
-  double dPD_GL::connect(void)
+  void dPD_GL::connect(void)
   {
     std::ofstream outfile ("connection.txt");
     std::uniform_int_distribution<>::param_type uintp;
@@ -212,11 +198,13 @@ namespace stendhal
     } // loop for pre-synaptic population
     // close file
     outfile.close();
-    return d_max; // return maximum delay; will be necessary to update ring-buffer size;
+    // update buffer length if necessary
+    if (d_max > (buffer_size*sim_params.delta_t))
+      update_buffer_size(d_max);
   } // connect
 
   // Create connection from file
-  double dPD_GL::connect(std::string fname)
+  void dPD_GL::connect(std::string fname)
   {
     std::ifstream input_file(fname);
     double d_max = 0.0;
@@ -248,9 +236,27 @@ namespace stendhal
       if (d > d_max)
 	d_max = d;
     }
-    return d_max;
+    // update buffer length if necessary
+    if (d_max > (buffer_size*sim_params.delta_t))
+      update_buffer_size(d_max);
   } // connect from file
 
+
+  // Prepare method
+  // call: calibrate, create_node and connect
+  void dPD_GL::prepare()
+  {
+    // Calculate auxiliary parameters
+    calibrate();
+    
+    // Initialize network
+    // Create neuron population
+    create_pop();
+    
+    // Create connection
+    connect();
+  } // prepare
+  
   // simulate
   void dPD_GL::simulate(double t_sim)
   {
@@ -303,7 +309,13 @@ namespace stendhal
   // update buffer size of all nodes
   void dPD_GL::update_buffer_size(double d)
   {
+    // update buffer size according to d
+    // set buffer_size to number os steps necessary to fit delay (d)
+    // plus one, as during simulation the position buff_pos is at t
+    // while spike time is at time t+dt, and delay should be counted
+    // from spike time, and not current simulation time
     buffer_size = std::round(d/sim_params.delta_t)+1;
+    // iterate through all neurons to update buffer size
     for (std::vector<gl_psc_exp*>::iterator it=neurons.begin(); it!=neurons.end(); it++)
       (*it)->resize_buffer(buffer_size);
   } // update buffer size

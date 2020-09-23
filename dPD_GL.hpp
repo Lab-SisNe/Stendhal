@@ -192,11 +192,13 @@ namespace stendhal
     // create neuron population
     void create_pop(void);
     // Create connection
-    double connect(void);
+    void connect(void);
     // Create connection from file
-    double connect(std::string);
+    void connect(std::string);
     // update buffer size
     void update_buffer_size(double);
+    // Prepare method; calls calibrate, create_pop and connect(void)
+    void prepare(void)
     // Simulate
     void simulate(double);
   }; // class dPD_GL

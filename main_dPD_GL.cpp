@@ -78,6 +78,13 @@ int main ( int argc, char* argv[] )
   class stendhal::dPD_GL dpd_gl(seed);
 
   auto start = std::chrono::steady_clock::now();
+  dpd_gl.prepare(); //call calibrate, create_pop and connect(void)
+  auto end = std::chrono::steady_clock::now();
+  std::chrono::duration<double> diff = end-start;
+  std::cout << "prepare: " << diff.count() << " s\n";
+
+  /*
+  auto start = std::chrono::steady_clock::now();
   dpd_gl.calibrate();
   auto end = std::chrono::steady_clock::now();
   std::chrono::duration<double> diff = end-start;
@@ -90,11 +97,12 @@ int main ( int argc, char* argv[] )
   std::cout << "create_pop: " << diff.count() << " s" << std::endl;
 
   start = std::chrono::steady_clock::now();
-  dpd_gl.connect();
+  dpd_gl.connect("conn_NEST.txt");
   end = std::chrono::steady_clock::now();
   diff = end-start;
   std::cout << "connect: " << diff.count() << " s" << std::endl;
-
+  */
+  
   start = std::chrono::steady_clock::now();
   dpd_gl.simulate(t_sim);
   end = std::chrono::steady_clock::now();
