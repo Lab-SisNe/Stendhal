@@ -131,7 +131,7 @@ namespace stendhal
     int post_ID; // postsynaptic ID
     double w; // weight
     double d; // delay
-    double max_d = 0.0;
+    double d_max = 0.0;
     
     // save connection table to file
     // Format:
