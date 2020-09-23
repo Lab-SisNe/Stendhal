@@ -46,6 +46,7 @@ References:
 #include <bitset>
 #include <random> // default C++ random generator
 #include <fstream>
+#include <string>
 
 // Include pcg if USE_PCG is defined; compile with -DUSE_PCG
 #ifdef USE_PCG
@@ -157,7 +158,6 @@ namespace stendhal
     } net_params; // struct network_parameters
 
     // buffer lenght (ms)
-    double buffer_len_ms = 5.0;
     unsigned int buffer_size = 50;
     unsigned int buffer_pos = 0;
     // array for scaled number of neurons per layer
@@ -166,7 +166,7 @@ namespace stendhal
     // number of connection between layers
     unsigned int K_scaled[N_layers][N_layers];
     // pointer to store layer class
-    class layer_class *layer[N_layers];
+    //class layer_class *layer[N_layers];
     // matrix to store neuron ID (initial and final) per layer
     unsigned int pop_ID[N_layers][2];
     // vector to store pointers to gl_psc_exp class
@@ -193,6 +193,8 @@ namespace stendhal
     void create_pop(void);
     // Create connection
     double connect(void);
+    // Create connection from file
+    double connect(std::string);
     // update buffer size
     void update_buffer_size(double);
     // Simulate

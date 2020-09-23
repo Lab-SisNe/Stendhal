@@ -26,6 +26,10 @@ Aug 11, 2020
 // Include C++ standard headers
 #include <fstream>
 #include <cmath>
+#include <iostream>
+#include <vector>
+#include <string>
+#include <sstream>
 
 // Include stendhal headers
 #include "dPD_GL.hpp"
@@ -55,7 +59,7 @@ namespace stendhal
     create_pop();
     
     // Create connection
-    double d_max = connect();
+    double d_max = connect() + sim_params.delta_t;
 
     // update buffer size if d_max larger than current buffer_size
     if (d_max > (buffer_size*sim_params.delta_t))
@@ -104,9 +108,9 @@ namespace stendhal
       for (int i=0; i<N_layers; i++) {
 	// calculate number of synapses
 	double Ca = net_params.conn_prob[j][i];
-	int Npre = N_scaled[i];
-	int Npost = N_scaled[j];
-	K_scaled[j][i] = (unsigned int)std::round(std::log(1.0-Ca)/std::log(1.0-(1.0/(double)(Npre*Npost))));
+	double Npre = (double)N_scaled[i];
+	double Npost = (double)N_scaled[j];
+	K_scaled[j][i] = (unsigned int)std::round(std::log(1.0-Ca)/std::log(1.0-1.0/(Npre*Npost)));
       } // pre pop
     } // post pop
   } // calibrate
@@ -123,6 +127,7 @@ namespace stendhal
     }
   } // create pop
 
+  // Create connection
   double dPD_GL::connect(void)
   {
     std::ofstream outfile ("connection.txt");
@@ -210,6 +215,42 @@ namespace stendhal
     return d_max; // return maximum delay; will be necessary to update ring-buffer size;
   } // connect
 
+  // Create connection from file
+  double dPD_GL::connect(std::string fname)
+  {
+    std::ifstream input_file(fname);
+    double d_max = 0.0;
+
+    if(!input_file.is_open())
+      throw std::runtime_error("Could not open connection file");
+
+    std::string line, word;
+    std::vector<std::string> row;
+    int i, j;
+    double w, d;
+
+    // read lines
+    while (std::getline(input_file, line)) {
+      // create string stream from current line
+      std::stringstream ss(line);
+      // clear row vector
+      row.clear();
+      // read each comma separated val in row vector
+      while (std::getline(ss, word, ','))
+	row.push_back(word);
+      // convert each word to respective variables; 
+      i = std::stoi(row[0]);
+      j = std::stoi(row[1]);
+      w = std::stof(row[2]);
+      d = std::stof(row[3]);
+      // Connect node
+      neurons[i-1]->connect(neurons[j-1], w, d);
+      if (d > d_max)
+	d_max = d;
+    }
+    return d_max;
+  } // connect from file
+
   // simulate
   void dPD_GL::simulate(double t_sim)
   {
@@ -262,7 +303,7 @@ namespace stendhal
   // update buffer size of all nodes
   void dPD_GL::update_buffer_size(double d)
   {
-    buffer_size = std::round(d/sim_params.delta_t);
+    buffer_size = std::round(d/sim_params.delta_t)+1;
     for (std::vector<gl_psc_exp*>::iterator it=neurons.begin(); it!=neurons.end(); it++)
       (*it)->resize_buffer(buffer_size);
   } // update buffer size

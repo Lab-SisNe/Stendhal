@@ -152,13 +152,13 @@ namespace stendhal
     // calculate excitatory post-synaptic current leak factor
     rho_exc = std::exp(-delta_t/param.tau_exc);
     // calculate inhibitory post-synaptic current leak factor
-    rho_inh = std::exp(-delta_t/param.tau_exc);
+    rho_inh = std::exp(-delta_t/param.tau_inh);
     // calculate excitatory post-synaptic current propagator
     prop_exc = propagator_exp(param.tau_m, param.tau_exc, param.C_m);
     // calculate inhibitory post-synaptic current propagator
     prop_inh = propagator_exp(param.tau_m, param.tau_inh, param.C_m);
     // calculate DC propagator
-    prop_step = param.tau_m * (1 - rho_m) / param.C_m;
+    prop_step = propagator_step(param.tau_m, param.C_m);
     // number of steps for refractory period
     ref_count = (int)(param.tau_ref*i_delta_t);
   } // calibrate
