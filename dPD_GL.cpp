@@ -199,39 +199,40 @@ namespace stendhal
     if (!spike_recorder.is_open())
       spike_recorder.open(spike_recorder_file, std::ofstream::out | std::ofstream::app);
 
-    // Apply input
-    unsigned int p;
-    std::poisson_distribution<>::param_type pparam;
-    // iterate through layers
-    for (int n=0; n<N_layers; n++) {
-      // set lambda for poisson distribution
-      pparam = std::poisson_distribution<>::param_type (lam[n]);
-      // iterate through pop_ID[n][0] to pop_ID[n][1]
-      for (int i=pop_ID[n][0]; i<=pop_ID[n][1]; i++) {
-	if (net_params.poisson_input) { // poisson input
-	  p = pdist(rng, pparam);
-	  neurons[i-1]->add_input(p * net_params.PSP_e, (unsigned int)0);
-	}
-	else { // DC input
-	  neurons[i-1]->add_DC_input(DC[n]);
+    while (t<=t_sim) {
+      // Apply input
+      unsigned int p;
+      std::poisson_distribution<>::param_type pparam;
+      // iterate through layers
+      for (int n=0; n<N_layers; n++) {
+	// set lambda for poisson distribution
+	pparam = std::poisson_distribution<>::param_type (lam[n]);
+	// iterate through pop_ID[n][0] to pop_ID[n][1]
+	for (int i=pop_ID[n][0]; i<=pop_ID[n][1]; i++) {
+	  if (net_params.poisson_input) { // poisson input
+	    p = pdist(rng, pparam);
+	    neurons[i-1]->add_input(p * net_params.PSP_e, (unsigned int)0);
+	  }
+	  else { // DC input
+	    neurons[i-1]->add_DC_input(DC[n]);
+	  }
 	}
       }
-    }
     
-    // evolve time
-    t += sim_params.delta_t;
+      // evolve time
+      t += sim_params.delta_t;
 
-    // evaluate
-    for (std::vector<gl_psc_exp*>::iterator it=neurons.begin(); it!=neurons.end(); it++) {
-      V_spiked = (*it)->evaluated();  // returns V_m prior to spike, 0.0 otherwise
-      // store spike output to file
-      if (V_spiked > 0)
-	spike_recorder << (int)std::round(t/sim_params.delta_t) << ", " << (*it)->get_id() << ", " << V_spiked << '\n';
-    }
+      // evaluate
+      for (std::vector<gl_psc_exp*>::iterator it=neurons.begin(); it!=neurons.end(); it++) {
+	V_spiked = (*it)->evaluated();  // returns V_m prior to spike, 0.0 otherwise
+	// store spike output to file
+	if (V_spiked > 0)
+	  spike_recorder << (int)std::round(t/sim_params.delta_t) << ", " << (*it)->get_id() << ", " << V_spiked << '\n';
+      }
 
-    // advance ring buffer position
-    buffer_pos = (buffer_pos+1) % buffer_size;
-    
+      // advance ring buffer position
+      buffer_pos = (buffer_pos+1) % buffer_size;
+    } // while loop    
   } // simulate
 } // namespace stendhal
 
