@@ -107,10 +107,7 @@ namespace stendhal
 	int Npre = N_scaled[i];
 	int Npost = N_scaled[j];
 	K_scaled[j][i] = (unsigned int)std::round(std::log(1.0-Ca)/std::log(1.0-(1.0/(double)(Npre*Npost))));
-	std::cout << K_scaled[j][i]
-		  << ", ";
       } // pre pop
-      std::cout << std::endl;
     } // post pop
   } // calibrate
 
