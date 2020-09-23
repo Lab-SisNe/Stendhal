@@ -167,6 +167,11 @@ namespace stendhal
       }
       // post pop
       for (int j=0; j<N_layers; j++) {
+	// W from L4e to L23e is doubled
+	if ((i==2) && (j==0)) {
+	  w_ *= 2.0;
+	  w_sd *= 2.0;
+	}
 	// number of synapses
 	for (int n=0; n<K_scaled[j][i]; n++) {
 	  // draw uniform integer between range pop_ID[i][0] and pop_ID[i][1]
