@@ -49,9 +49,33 @@ main function
 
 */
 
+// Usage message
+static void show_usage(std::string name)
+{
+  std::cerr << "Usage: " << name << " seed t_sim" << std::endl
+	    << "  seed: seed for random number generator (integer)" << std::endl
+	    << "  t_sim: simulation time in (ms)" << std::endl
+	    << "    if t_sim is ommitted, it defaults to 1000.0 ms"
+	    << std::endl;
+}
+
 int main ( int argc, char* argv[] )
 {
-  class stendhal::dPD_GL dpd_gl;
+  double t_sim;
+  if ((argc == 1) || (argc > 3)) {
+    show_usage(argv[0]);
+    return 1;
+  }
+  if (argc==2)
+    t_sim = 1000.0;
+  else
+    t_sim = std::atof(argv[2]);
+  int seed = std::atoi(argv[1]);
+  std::cout << "seed: " << seed
+	    << ", Simulation time: "
+	    << t_sim << " ms" << std::endl;
+  
+  class stendhal::dPD_GL dpd_gl(seed);
 
   auto start = std::chrono::steady_clock::now();
   dpd_gl.calibrate();
@@ -72,7 +96,6 @@ int main ( int argc, char* argv[] )
   std::cout << "connect: " << diff.count() << " s" << std::endl;
 
   start = std::chrono::steady_clock::now();
-  double t_sim = 1000.0;
   dpd_gl.simulate(t_sim);
   end = std::chrono::steady_clock::now();
   diff = end-start;

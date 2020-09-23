@@ -250,7 +250,11 @@ namespace stendhal
 	  // Convert delay to number of steps
 	  // increment one as neuron spiked at time t+dt
 	  // and buffer position is still at time t
-	  unsigned int d = std::round((*it).delay*i_delta_t)+1;
+	  // do not round, as spikes arriving with a delay of 0.19
+	  // should have the same effect as a delay of 0.1,
+	  // and not as 0.2 or 0.21
+	  //unsigned int d = std::round((*it).delay*i_delta_t)+1;
+	  unsigned int d = (int)((*it).delay*i_delta_t)+1;
 	  // call add_input method of the post-synaptic neuron
 	  (*it).target->add_input((*it).weight, d);
 	}
