@@ -52,56 +52,61 @@ main function
 // Usage message
 static void show_usage(std::string name)
 {
-  std::cerr << "Usage: " << name << " seed t_sim" << std::endl
+  std::cerr << "Usage: " << name << " seed t_sim <conn_csv_data>" << std::endl
 	    << "  seed: seed for random number generator (integer)" << std::endl
 	    << "  t_sim: simulation time in (ms)" << std::endl
-	    << "    if t_sim is ommitted, it defaults to 1000.0 ms"
+	    << "  conn_csv_data (optional): CSV file containing connectivity data:" << std::endl
+	    << "    if conn_csv_data is ommited, connection is randombly genenrated"
 	    << std::endl;
 }
 
 int main ( int argc, char* argv[] )
 {
-  double t_sim;
-  if ((argc == 1) || (argc > 3)) {
+  if ((argc < 3) || (argc > 4)) {
     show_usage(argv[0]);
     return 1;
   }
-  if (argc==2)
-    t_sim = 1000.0;
-  else
-    t_sim = std::atof(argv[2]);
   int seed = std::atoi(argv[1]);
+  double t_sim = std::atof(argv[2]);
   std::cout << "seed: " << seed
 	    << ", Simulation time: "
-	    << t_sim << " ms" << std::endl;
+	    << t_sim << " ms";
+  if (argc==4)
+    std::cout << ", CSV_file: " << argv[3];
+  std::cout << std::endl;
   
   class stendhal::dPD_GL dpd_gl(seed);
 
-  auto start = std::chrono::steady_clock::now();
-  dpd_gl.prepare(); //call calibrate, create_pop and connect(void)
-  auto end = std::chrono::steady_clock::now();
-  std::chrono::duration<double> diff = end-start;
-  std::cout << "prepare: " << diff.count() << " s\n";
+  std::chrono::time_point<std::chrono::steady_clock> start;
+  std::chrono::time_point<std::chrono::steady_clock> end;
+  std::chrono::duration<double> diff;
+  
+  if (argc != 4) {
+    start = std::chrono::steady_clock::now();
+    dpd_gl.prepare(); //call calibrate, create_pop and connect(void)
+    end = std::chrono::steady_clock::now();
+    diff = end-start;
+    std::cout << "prepare: " << diff.count() << " s\n";
+  }
+  else {
+    start = std::chrono::steady_clock::now();
+    dpd_gl.calibrate();
+    end = std::chrono::steady_clock::now();
+    diff = end-start;
+    std::cout << "calibrate: " << diff.count() << " s\n";
 
-  /*
-  auto start = std::chrono::steady_clock::now();
-  dpd_gl.calibrate();
-  auto end = std::chrono::steady_clock::now();
-  std::chrono::duration<double> diff = end-start;
-  std::cout << "calibrate: " << diff.count() << " s\n";
+    start = std::chrono::steady_clock::now();
+    dpd_gl.create_pop();
+    end = std::chrono::steady_clock::now();
+    diff = end-start;
+    std::cout << "create_pop: " << diff.count() << " s" << std::endl;
 
-  start = std::chrono::steady_clock::now();
-  dpd_gl.create_pop();
-  end = std::chrono::steady_clock::now();
-  diff = end-start;
-  std::cout << "create_pop: " << diff.count() << " s" << std::endl;
-
-  start = std::chrono::steady_clock::now();
-  dpd_gl.connect("conn_NEST.txt");
-  end = std::chrono::steady_clock::now();
-  diff = end-start;
-  std::cout << "connect: " << diff.count() << " s" << std::endl;
-  */
+    start = std::chrono::steady_clock::now();
+    dpd_gl.connect(argv[3]);
+    end = std::chrono::steady_clock::now();
+    diff = end-start;
+    std::cout << "connect: " << diff.count() << " s" << std::endl;
+  }
   
   start = std::chrono::steady_clock::now();
   dpd_gl.simulate(t_sim);

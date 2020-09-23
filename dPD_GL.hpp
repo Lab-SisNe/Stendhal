@@ -198,7 +198,7 @@ namespace stendhal
     // update buffer size
     void update_buffer_size(double);
     // Prepare method; calls calibrate, create_pop and connect(void)
-    void prepare(void)
+    void prepare(void);
     // Simulate
     void simulate(double);
   }; // class dPD_GL
