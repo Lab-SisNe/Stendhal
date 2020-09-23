@@ -192,7 +192,9 @@ namespace stendhal
     // create neuron population
     void create_pop(void);
     // Create connection
-    void connect(void);
+    double connect(void);
+    // update buffer size
+    void update_buffer_size(double);
     // Simulate
     void simulate(double);
   }; // class dPD_GL

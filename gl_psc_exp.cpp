@@ -254,11 +254,11 @@ namespace stendhal
 	  // call add_input method of the post-synaptic neuron
 	  (*it).target->add_input((*it).weight, d);
 	}
-	// return potential where the neuron fired
+	// return potential in which the neuron fired
 	return ret;
       } // neuron fired
     } // not refractory
-    // return zero when neuron did not fired
+    // return zero when neuron did not fire
     return ret;
   } // evaluate pre-defined step size (discrete algorithm)
 

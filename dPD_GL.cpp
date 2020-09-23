@@ -55,7 +55,11 @@ namespace stendhal
     create_pop();
     
     // Create connection
-    connect();
+    double d_max = connect();
+
+    // update buffer size if d_max larger than current buffer_size
+    if (d_max > (buffer_size*sim_params.delta_t))
+      update_buffer_size(d_max);
 
     // open output file;
     spike_recorder.open(spike_recorder_file);
@@ -119,7 +123,7 @@ namespace stendhal
     }
   } // create pop
 
-  void dPD_GL::connect(void)
+  double dPD_GL::connect(void)
   {
     std::ofstream outfile ("connection.txt");
     std::uniform_int_distribution<>::param_type uintp;
@@ -127,7 +131,8 @@ namespace stendhal
     int post_ID; // postsynaptic ID
     double w; // weight
     double d; // delay
-
+    double max_d = 0.0;
+    
     // save connection table to file
     // Format:
     //   N_layers:
@@ -143,6 +148,23 @@ namespace stendhal
     // create connection
     // pre pop
     for (int i=0; i<N_layers; i++) {
+      double w_, w_sd, d_, d_sd;
+      if ((i%2) == 0) { // pre is excitatory
+	// weight
+	w_ = net_params.PSP_e;
+	w_sd = w_ * net_params.PSP_sd;
+	// delay
+	d_ = net_params.mean_delay_exc;
+	d_sd = d_ * net_params.rel_std_delay;
+      }
+      else { // pre is inhibitory
+	// weight
+	w_ = net_params.PSP_e * net_params.g;
+	w_sd = w_ * net_params.PSP_sd;
+	// delay
+	d_ = net_params.mean_delay_inh;
+	d_sd = d_ * net_params.rel_std_delay;
+      }
       // post pop
       for (int j=0; j<N_layers; j++) {
 	// number of synapses
@@ -157,31 +179,22 @@ namespace stendhal
 	  if ((i%2) == 0) { // pre is excitatory
 	    // weight
 	    w = 0.0;
-	    double w_ = net_params.PSP_e;
-	    double w_sd = w_ * net_params.PSP_sd;
 	    while (w <= 0) // excitatory weight must be positive
 	      w = w_ + w_sd * ndist(rng);
-	    // delay
-	    d = 0.0;
-	    double d_ = net_params.mean_delay_exc;
-	    double d_sd = d_ * net_params.rel_std_delay;
-	    while (d < sim_params.delta_t) // delay must be >= delta_t
-	      d = d_ + d_sd * ndist(rng);
 	  }
 	  else { // pre is inhibitory
 	    // weight
 	    w = 0.0;
-	    double w_ = net_params.PSP_e * net_params.g;
-	    double w_sd = w_ * net_params.PSP_sd;
 	    while (w >= 0) // inhibitory weight must be negative
 	      w = w_ - w_sd * ndist(rng);
-	    // delay
-	    d = 0.0;
-	    double d_ = net_params.mean_delay_inh;
-	    double d_sd = d_ * net_params.rel_std_delay;
-	    while (d < sim_params.delta_t) // delay must be >= delta_t
-	      d = d_ + d_sd * ndist(rng);
 	  }
+	  // delay
+	  d = 0.0;
+	  while (d < sim_params.delta_t) // delay must be >= delta_t
+	    d = d_ + d_sd * ndist(rng);
+
+	  if (d > d_max)
+	    d_max = d;
 	  neurons[pre_ID-1]->connect(neurons[post_ID-1], w, d);
 	  outfile << pre_ID << ", "  << post_ID << ", " << w << ", " << d << '\n';
 	} // loop for number of synapses
@@ -189,28 +202,33 @@ namespace stendhal
     } // loop for pre-synaptic population
     // close file
     outfile.close();
+    return d_max; // return maximum delay; will be necessary to update ring-buffer size;
   } // connect
 
   // simulate
   void dPD_GL::simulate(double t_sim)
   {
     double V_spiked;
+    unsigned int p;
+    std::poisson_distribution<>::param_type pparam;
+
     // Reopen file in append mode if not open
     if (!spike_recorder.is_open())
       spike_recorder.open(spike_recorder_file, std::ofstream::out | std::ofstream::app);
 
+    // iterate for a period of t_sim; to do so, t must be added to t_sim
+    // to account for simulation starting at time t
+    t_sim += t;
     while (t<=t_sim) {
       // Apply input
-      unsigned int p;
-      std::poisson_distribution<>::param_type pparam;
       // iterate through layers
       for (int n=0; n<N_layers; n++) {
-	// set lambda for poisson distribution
+	// set lambda for poisson distribution; shared between neurons of the same layer
 	pparam = std::poisson_distribution<>::param_type (lam[n]);
 	// iterate through pop_ID[n][0] to pop_ID[n][1]
 	for (int i=pop_ID[n][0]; i<=pop_ID[n][1]; i++) {
 	  if (net_params.poisson_input) { // poisson input
-	    p = pdist(rng, pparam);
+	    p = pdist(rng, pparam); // draw poisson distribution with rate lam[n]
 	    neurons[i-1]->add_input(p * net_params.PSP_e, (unsigned int)0);
 	  }
 	  else { // DC input
@@ -224,15 +242,24 @@ namespace stendhal
 
       // evaluate
       for (std::vector<gl_psc_exp*>::iterator it=neurons.begin(); it!=neurons.end(); it++) {
-	V_spiked = (*it)->evaluated();  // returns V_m prior to spike, 0.0 otherwise
+	V_spiked = (*it)->evaluated();  // returns V_m when the neuron spiked; 0.0 otherwise
 	// store spike output to file
 	if (V_spiked > 0)
 	  spike_recorder << (int)std::round(t/sim_params.delta_t) << ", " << (*it)->get_id() << ", " << V_spiked << '\n';
       }
 
       // advance ring buffer position
+      // all nodes share this same adress
       buffer_pos = (buffer_pos+1) % buffer_size;
     } // while loop    
   } // simulate
+
+  // update buffer size of all nodes
+  void dPD_GL::update_buffer_size(double d)
+  {
+    buffer_size = std::round(d/sim_params.delta_t);
+    for (std::vector<gl_psc_exp*>::iterator it=neurons.begin(); it!=neurons.end(); it++)
+      (*it)->resize_buffer(buffer_size);
+  } // update buffer size
 } // namespace stendhal
 
