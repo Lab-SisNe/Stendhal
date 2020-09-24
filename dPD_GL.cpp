@@ -117,7 +117,7 @@ namespace stendhal
   void dPD_GL::connect(void)
   {
     std::ofstream outfile ("connection.txt");
-    std::uniform_int_distribution<>::param_type uintp;
+    std::uniform_int_distribution<>::param_type uintpre, uintpost;
     int pre_ID; // presynaptic ID
     int post_ID; // postsynaptic ID
     double w; // weight
@@ -164,13 +164,14 @@ namespace stendhal
 	  w_sd *= 2.0;
 	}
 	// number of synapses
+	// uniform integer distribution parameters
+	uintpre = std::uniform_int_distribution<>::param_type (pop_ID[i][0], pop_ID[i][1]); // pre-synaptic parameters
+	uintpost = std::uniform_int_distribution<>::param_type(pop_ID[j][0], pop_ID[j][1]); // post-synaptic parameters
 	for (int n=0; n<K_scaled[j][i]; n++) {
 	  // draw uniform integer between range pop_ID[i][0] and pop_ID[i][1]
-	  uintp = std::uniform_int_distribution<>::param_type (pop_ID[i][0], pop_ID[i][1]);
-	  pre_ID = udist_int(rng, uintp);
+	  pre_ID = udist_int(rng, uintpre);
 	  // draw uniform integer between range pop_ID[j][0] and pop_ID[j][1]
-	  uintp = std::uniform_int_distribution<>::param_type(pop_ID[j][0], pop_ID[j][1]);
-	  post_ID = udist_int(rng, uintp);
+	  post_ID = udist_int(rng, uintpost);
 	  // draw normal distribution for synaptic weight and delay
 	  if ((i%2) == 0) { // pre is excitatory
 	    // weight
@@ -189,6 +190,8 @@ namespace stendhal
 	  while (d < sim_params.delta_t) // delay must be >= delta_t
 	    d = d_ + d_sd * ndist(rng);
 
+	  // round d to delta_t
+	  //d = (double)(std::round(d/sim_params.delta_t))*sim_params.delta_t;
 	  if (d > d_max)
 	    d_max = d;
 	  neurons[pre_ID-1]->connect(neurons[post_ID-1], w, d);
@@ -237,7 +240,7 @@ namespace stendhal
 	d_max = d;
     }
     // update buffer length if necessary
-    if (d_max > (buffer_size*sim_params.delta_t))
+    if (d_max > ((buffer_size)*sim_params.delta_t))
       update_buffer_size(d_max);
   } // connect from file
 
@@ -311,13 +314,24 @@ namespace stendhal
   {
     // update buffer size according to d
     // set buffer_size to number os steps necessary to fit delay (d)
-    // plus one, as during simulation the position buff_pos is at t
-    // while spike time is at time t+dt, and delay should be counted
-    // from spike time, and not current simulation time
+    // plus one, as during simulation the position buff_pos is at t+dt
+    // if a delay of buff_size is to be added, it will be added at the
+    // same position as t+dt, which will be erased after neuron evaluation.
     buffer_size = std::round(d/sim_params.delta_t)+1;
     // iterate through all neurons to update buffer size
     for (std::vector<gl_psc_exp*>::iterator it=neurons.begin(); it!=neurons.end(); it++)
       (*it)->resize_buffer(buffer_size);
   } // update buffer size
+
+  // temporary
+  double dPD_GL::get_conn_prob(int i, int j)
+  {
+    return net_params.conn_prob[j][i];
+  }
+
+  const int dPD_GL::get_N_layers(void)
+  {
+    return N_layers;
+  }
 } // namespace stendhal
 

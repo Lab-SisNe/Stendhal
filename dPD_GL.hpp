@@ -201,6 +201,10 @@ namespace stendhal
     void prepare(void);
     // Simulate
     void simulate(double);
+
+    // temporary
+    double get_conn_prob(int i, int j);
+    const int get_N_layers(void);
   }; // class dPD_GL
       
 

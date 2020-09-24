@@ -248,13 +248,10 @@ namespace stendhal
 	// iterate through all connection list
 	for (std::vector<connection>::iterator it=conn_list.begin(); it!=conn_list.end(); it++) {
 	  // Convert delay to number of steps
-	  // increment one as neuron spiked at time t+dt
-	  // and buffer position is still at time t
-	  // do not round, as spikes arriving with a delay of 0.19
-	  // should have the same effect as a delay of 0.1,
-	  // and not as 0.2 or 0.21
-	  //unsigned int d = std::round((*it).delay*i_delta_t)+1;
-	  unsigned int d = (int)((*it).delay*i_delta_t)+1;
+	  // buffer position is at t+dt
+	  // so that a delay of dt would mean
+	  // buffer position at t+dt+dt, that is 1;
+	  unsigned int d = std::round(((*it).delay*i_delta_t));
 	  // call add_input method of the post-synaptic neuron
 	  (*it).target->add_input((*it).weight, d);
 	}
