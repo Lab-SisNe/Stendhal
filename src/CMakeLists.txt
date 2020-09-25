@@ -27,7 +27,7 @@ Aug 11, 2020
 cmake_minimum_required( VERSION 3.15 )
 
 # Set project name and version
-project( stendhal_PD VERSION 0.1 )
+project( stendhal VERSION 0.1 )
 
 # Specify the C++ standard
 set( CMAKE_CXX_STANDARD 11)
@@ -36,12 +36,13 @@ set( CMAKE_CXX_STANDARD_REQUIRED True )
 # Add header file to pass configuration
 configure_file( stendhalconfig.h.in stendhalconfig.h )
 
-# Add directory of config header to the list of paths to search for include files
-target_include_directories( stendhal_PD PUBLIC "${PROJECT_BINARY_DIR}" )
-
 # Add library
 #add_library( dPD_GL dPD_GL.cpp )
 #add_library( gl_psc_exp gl_psc_exp.cpp )
 
 # Add executable
 add_executable( stendhal_PD main_dPD_GL.cpp dPD_GL.cpp gl_psc_exp.cpp)
+
+# Add directory of config header to the list of paths to search for include files
+target_include_directories( stendhal_PD PUBLIC "${PROJECT_BINARY_DIR}" )
+
