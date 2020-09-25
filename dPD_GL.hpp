@@ -149,7 +149,7 @@ namespace stendhal
       // mean delay of excitatory connections (in ms)
       double mean_delay_exc {1.5};
       // mean delay of inhibitory connections (in ms)
-      double mean_delay_inh {0.8};
+      double mean_delay_inh {0.75};
       // relative standard deviation of delays
       double rel_std_delay {0.5};
       // synaptic decay time constant
@@ -205,6 +205,7 @@ namespace stendhal
     // temporary
     double get_conn_prob(int i, int j);
     const int get_N_layers(void);
+    //    void check_connection(std::string);
   }; // class dPD_GL
       
 

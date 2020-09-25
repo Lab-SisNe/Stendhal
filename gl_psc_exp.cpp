@@ -32,7 +32,6 @@
    (1) Antonio Galves and Eva Locherbach (2013).
 */
 
-
 #include "gl_psc_exp.hpp"
 
 namespace stendhal
@@ -148,7 +147,7 @@ namespace stendhal
     i_delta_t = 1.0/dt;
 
     // calculate membrane potential leak factor
-    rho_m = std::exp(-delta_t/param.C_m);
+    rho_m = std::exp(-delta_t/param.tau_m);
     // calculate excitatory post-synaptic current leak factor
     rho_exc = std::exp(-delta_t/param.tau_exc);
     // calculate inhibitory post-synaptic current leak factor
@@ -213,8 +212,13 @@ namespace stendhal
   double gl_psc_exp::evaluated(void)
   {
     double ret {0.0};
-    if (is_ref>0)
+    if (is_ref>0) {
       is_ref--;
+      // clear input buffer
+      W_exc[*pbuff_pos] = 0.0;
+      W_inh[*pbuff_pos] = 0.0;
+      I_ext = 0.0;
+    }
     else {
       // Evolve membrane potential to the next simulation step
       V_m = rho_m*V_m + prop_exc*I_exc + prop_inh*I_inh + prop_step*I_ext;
@@ -246,7 +250,7 @@ namespace stendhal
 	is_ref = ref_count;
 	// Send spike
 	// iterate through all connection list
-	for (std::vector<connection>::iterator it=conn_list.begin(); it!=conn_list.end(); it++) {
+	for (std::vector<struct connection>::iterator it=conn_list.begin(); it!=conn_list.end(); it++) {
 	  // Convert delay to number of steps
 	  // buffer position is at t+dt
 	  // so that a delay of dt would mean
@@ -321,6 +325,10 @@ namespace stendhal
   {
     // ToDo: Implement code for continuous time
     // This code may not be exactly here
+  }
+
+  std::vector<struct connection>* gl_psc_exp::get_connection(void) {
+    return &conn_list;
   }
 
 } // namespace stendhal

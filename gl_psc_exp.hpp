@@ -134,7 +134,7 @@ namespace stendhal
     unsigned int len; // keep a copy of buffer size
 
     // connection vector
-    std::vector<connection> conn_list;
+    std::vector<struct connection> conn_list;
     
     // auxiliary functions
     void calibrate(double =0.1); // calculate auxiliary variables
@@ -213,6 +213,10 @@ namespace stendhal
 
     // Add external current input
     void add_DC_input(double val);
+
+    // Get Connection
+    std::vector<struct connection>* get_connection(void);
+
   }; // class gl_psc_exp
 
 } // namespace stendhal

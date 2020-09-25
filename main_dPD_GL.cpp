@@ -113,6 +113,8 @@ int main ( int argc, char* argv[] )
   end = std::chrono::steady_clock::now();
   diff = end-start;
   std::cout << "simulate(" << t_sim << "): " << diff.count() << " s" << std::endl;
+
+  //  dpd_gl.check_connection("conn_check.txt");
   
   return 0;
 } 
