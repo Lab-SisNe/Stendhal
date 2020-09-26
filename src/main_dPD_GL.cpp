@@ -68,6 +68,12 @@ int main ( int argc, char* argv[] )
   }
   int seed = std::atoi(argv[1]);
   double t_sim = std::atof(argv[2]);
+  std::cout << "Random Number Generator Engine: ";
+#ifdef HAVE_PCG
+  std::cout << "pcg32" << std::endl;
+#else
+  std::cout << "mt19937" << std::endl;
+#endif
   std::cout << "seed: " << seed
 	    << ", Simulation time: "
 	    << t_sim << " ms";

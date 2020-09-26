@@ -89,14 +89,26 @@ namespace stendhal
     
     // Calculate number of synapses based on N_scaled and conn_prob
     // post pop
-    for (int j=0; j<N_layers; j++) {
+    for (int i=0; i<N_layers; i++) {
       // pre pop
-      for (int i=0; i<N_layers; i++) {
+      for (int j=0; j<N_layers; j++) {
 	// calculate number of synapses
-	double Ca = net_params.conn_prob[j][i];
-	double Npre = (double)N_scaled[i];
-	double Npost = (double)N_scaled[j];
-	K_scaled[j][i] = (unsigned int)std::round(std::log(1.0-Ca)/std::log(1.0-1.0/(Npre*Npost)));
+	double Ca = net_params.conn_prob[i][j];
+	double Npre = (double)N_scaled[j];
+	double Npost = (double)N_scaled[i];
+	K_scaled[i][j] = (unsigned int)std::round(std::log(1.0-Ca)/std::log(1.0-1.0/(Npre*Npost)));
+	// calculate weight matrix
+	if ((j%2) == 0) {
+	  weight_matrix[i][j] = net_params.PSP_e;
+	  if ((j==2) && (i==0)) {
+	    weight_matrix[i][j] = 2 * net_params.PSP_e;
+	  }
+	  delay_matrix[i][j] = net_params.mean_delay_exc;
+	}
+	else {
+	  weight_matrix[i][j] = net_params.g * net_params.PSP_e;
+	  delay_matrix[i][j] = net_params.mean_delay_inh;
+	}
       } // pre pop
     } // post pop
   } // calibrate
@@ -138,49 +150,34 @@ namespace stendhal
     
     // create connection
     // pre pop
-    for (int i=0; i<N_layers; i++) {
-      if ((i%2) == 0) { // pre is excitatory
-	// weight
-	w_ = net_params.PSP_e;
-	w_sd = w_ * net_params.PSP_sd;
-	// delay
-	d_ = net_params.mean_delay_exc;
-	d_sd = d_ * net_params.rel_std_delay;
-      }
-      else { // pre is inhibitory
-	// weight
-	w_ = net_params.PSP_e * net_params.g;
-	w_sd = - w_ * net_params.PSP_sd;
-	// delay
-	d_ = net_params.mean_delay_inh;
-	d_sd = d_ * net_params.rel_std_delay;
-      }
+    for (int j=0; j<N_layers; j++) {
       // post pop
-      for (int j=0; j<N_layers; j++) {
-	// W from L4e to L23e is doubled
-	if ((i==2) && (j==0)) {
-	  w_ *= 2.0;
-	  w_sd *= 2.0;
-	}
-	// number of synapses
+      for (int i=0; i<N_layers; i++) {
 	// uniform integer distribution parameters
-	uintpre = std::uniform_int_distribution<>::param_type (pop_ID[i][0], pop_ID[i][1]); // post-synaptic parameters
-	uintpost = std::uniform_int_distribution<>::param_type (pop_ID[j][0], pop_ID[j][1]); // post-synaptic parameters
-	for (int n=0; n<K_scaled[j][i]; n++) {
-	  // draw uniform integer between range pop_ID[i][0] and pop_ID[i][1]
-	  pre_ID = udist_int(rng, uintpre);
+	uintpre = std::uniform_int_distribution<>::param_type (pop_ID[j][0], pop_ID[j][1]); // post-synaptic parameters
+	uintpost = std::uniform_int_distribution<>::param_type (pop_ID[i][0], pop_ID[i][1]); // post-synaptic parameters
+	// weight parameters
+	w_ = weight_matrix[i][j];
+	w_sd = w_ * net_params.PSP_sd;
+	// delay parameters
+	d_ = delay_matrix[i][j];
+	d_sd = d_ * net_params.rel_std_delay;
+	// number of synapses
+	for (int n=0; n<K_scaled[i][j]; n++) {
 	  // draw uniform integer between range pop_ID[j][0] and pop_ID[j][1]
+	  pre_ID = udist_int(rng, uintpre);
+	  // draw uniform integer between range pop_ID[i][0] and pop_ID[i][1]
 	  post_ID = udist_int(rng, uintpost);
 	  // draw normal distribution for synaptic weight and delay
 	  // weight
 	  w = 0.0;
-	  if ((i%2) == 0) { // pre is excitatory
+	  if ((j%2) == 0) { // pre is excitatory
 	    while (w <= 0) // excitatory weight must be positive
 	      w = w_ + w_sd * ndist(rng);
 	  }
 	  else { // pre is inhibitory
 	    while (w >= 0) // inhibitory weight must be negative
-	      w = w_ + w_sd * ndist(rng);
+	      w = w_ - w_sd * ndist(rng);
 	  }
 	  // delay
 	  d = 0.0;

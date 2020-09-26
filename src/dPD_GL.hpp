@@ -165,6 +165,10 @@ namespace stendhal
     unsigned int N_cumsum[N_layers+1];
     // number of connection between layers
     unsigned int K_scaled[N_layers][N_layers];
+    // weight matrix
+    double weight_matrix[N_layers][N_layers];
+    // delay matrix
+    double delay_matrix[N_layers][N_layers];
     // pointer to store layer class
     //class layer_class *layer[N_layers];
     // matrix to store neuron ID (initial and final) per layer
