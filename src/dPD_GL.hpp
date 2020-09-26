@@ -39,7 +39,7 @@ References:
 
 // Flag to select random number generator
 // comment out to use PCG
-//#define USE_PCG
+//#define HAVE_PCG
 
 // Include C++ standard headers
 #include <vector>
@@ -48,8 +48,8 @@ References:
 #include <fstream>
 #include <string>
 
-// Include pcg if USE_PCG is defined; compile with -DUSE_PCG
-#ifdef USE_PCG
+// Include pcg if HAVE_PCG is defined; compile with -DHAVE_PCG
+#ifdef HAVE_PCG
 #include "pcg-cpp/pcg_random.hpp" // PCG random number generator
 #endif
 
@@ -70,7 +70,7 @@ namespace stendhal
     // simulation seed
     unsigned int seed;
     // random number generator engine
-#ifdef USE_PCG
+#ifdef HAVE_PCG
     pcg32 rng;
 #else
     std::mt19937 rng;

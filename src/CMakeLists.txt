@@ -40,6 +40,12 @@ configure_file( stendhalconfig.h.in stendhalconfig.h )
 #add_library( dPD_GL dPD_GL.cpp )
 #add_library( gl_psc_exp gl_psc_exp.cpp )
 
+# Check if PCG is present and set compiler flag accordinglly
+find_file(HAVE_PCG pcg-cpp/pcg_random.hpp "${PROJECT_SOURCE_DIR}")
+if (NOT ${HAVE_PCG} MATCHES "HAVE_PCG-NOTFOUND")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DHAVE_PCG")
+endif()
+  
 # Add executable
 add_executable( stendhal_PD main_dPD_GL.cpp dPD_GL.cpp gl_psc_exp.cpp)
 

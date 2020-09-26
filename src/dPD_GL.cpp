@@ -120,8 +120,8 @@ namespace stendhal
     std::uniform_int_distribution<>::param_type uintpre, uintpost;
     int pre_ID; // presynaptic ID
     int post_ID; // postsynaptic ID
-    double w; // weight
-    double d; // delay
+    double w, w_, w_sd; // weight
+    double d, d_, d_sd; // delay
     double d_max = 0.0;
     
     // save connection table to file
@@ -139,7 +139,6 @@ namespace stendhal
     // create connection
     // pre pop
     for (int i=0; i<N_layers; i++) {
-      double w_, w_sd, d_, d_sd;
       if ((i%2) == 0) { // pre is excitatory
 	// weight
 	w_ = net_params.PSP_e;
@@ -151,7 +150,7 @@ namespace stendhal
       else { // pre is inhibitory
 	// weight
 	w_ = net_params.PSP_e * net_params.g;
-	w_sd = w_ * net_params.PSP_sd;
+	w_sd = - w_ * net_params.PSP_sd;
 	// delay
 	d_ = net_params.mean_delay_inh;
 	d_sd = d_ * net_params.rel_std_delay;
@@ -165,36 +164,35 @@ namespace stendhal
 	}
 	// number of synapses
 	// uniform integer distribution parameters
-	uintpre = std::uniform_int_distribution<>::param_type (pop_ID[i][0], pop_ID[i][1]); // pre-synaptic parameters
-	uintpost = std::uniform_int_distribution<>::param_type(pop_ID[j][0], pop_ID[j][1]); // post-synaptic parameters
+	uintpre = std::uniform_int_distribution<>::param_type (pop_ID[i][0], pop_ID[i][1]); // post-synaptic parameters
+	uintpost = std::uniform_int_distribution<>::param_type (pop_ID[j][0], pop_ID[j][1]); // post-synaptic parameters
 	for (int n=0; n<K_scaled[j][i]; n++) {
 	  // draw uniform integer between range pop_ID[i][0] and pop_ID[i][1]
 	  pre_ID = udist_int(rng, uintpre);
 	  // draw uniform integer between range pop_ID[j][0] and pop_ID[j][1]
 	  post_ID = udist_int(rng, uintpost);
 	  // draw normal distribution for synaptic weight and delay
+	  // weight
+	  w = 0.0;
 	  if ((i%2) == 0) { // pre is excitatory
-	    // weight
-	    w = 0.0;
 	    while (w <= 0) // excitatory weight must be positive
 	      w = w_ + w_sd * ndist(rng);
 	  }
 	  else { // pre is inhibitory
-	    // weight
-	    w = 0.0;
 	    while (w >= 0) // inhibitory weight must be negative
-	      w = w_ - w_sd * ndist(rng);
+	      w = w_ + w_sd * ndist(rng);
 	  }
 	  // delay
 	  d = 0.0;
 	  while (d < sim_params.delta_t) // delay must be >= delta_t
 	    d = d_ + d_sd * ndist(rng);
 
-	  // round d to delta_t
-	  //d = (double)(std::round(d/sim_params.delta_t))*sim_params.delta_t;
+	  // update d_max to define buffer size
 	  if (d > d_max)
 	    d_max = d;
+	  // create connetion
 	  neurons[pre_ID-1]->connect(neurons[post_ID-1], w, d);
+	  // store connection
 	  outfile << pre_ID << ", "  << post_ID << ", " << w << ", " << d << '\n';
 	} // loop for number of synapses
       } // loop for post-synaptic population

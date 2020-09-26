@@ -41,8 +41,8 @@
 #include <bitset>
 #include <random> // default C++ random generator
 
-// Include PCG randon number generator if USE_PCG is defined
-#ifdef USE_PCG
+// Include PCG randon number generator if HAVE_PCG is defined
+#ifdef HAVE_PCG
 #include "pcg-cpp/pcg_random.hpp"
 #endif
 
@@ -72,7 +72,7 @@ namespace stendhal
     double delta_t {0.1};
     double i_delta_t {10.0};
     // pointer to (global) random number generator
-#ifdef USE_PCG
+#ifdef HAVE_PCG
     pcg32 *prng;
 #else
     std::mt19937 *prng;
@@ -150,9 +150,9 @@ namespace stendhal
     // default constructor
     // step size is specified to initializa auxiliary variables. defaults to 0.1 (ms)
     // requires pointer to global random number generator engine
-    // (pcg32 if USE_PCG is defined, mt19937 otherwise);
+    // (pcg32 if HAVE_PCG is defined, mt19937 otherwise);
     // pointer to global uniform distribution, pointers to buffer position and size
-#ifdef USE_PCG
+#ifdef HAVE_PCG
     gl_psc_exp(double =0.1, pcg32* =NULL, std::uniform_real_distribution<>* =NULL, unsigned int* =NULL, unsigned int* =NULL);
 #else
     gl_psc_exp(double =0.1, std::mt19937* =NULL, std::uniform_real_distribution<>* =NULL, unsigned int* =NULL, unsigned int* =NULL);

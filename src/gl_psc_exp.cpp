@@ -42,9 +42,9 @@ namespace stendhal
   // default constructor
   // step size is specified to initializa auxiliary variables. defaults to 0.1 (ms)
   // requires pointer to global random number generator engine
-  // (pcg32 if USE_PCG is defined, mt19937 otherwise);
+  // (pcg32 if HAVE_PCG is defined, mt19937 otherwise);
   // pointer to global uniform distribution, pointers to buffer position and size
-#ifdef USE_PCG
+#ifdef HAVE_PCG
   gl_psc_exp::gl_psc_exp(double dt, pcg32 *rng, std::uniform_real_distribution<> *dist, unsigned int *pos, unsigned int *size)
 #else
   gl_psc_exp::gl_psc_exp(double dt, std::mt19937 *rng, std::uniform_real_distribution<> *dist, unsigned int *pos, unsigned int *size)
@@ -91,7 +91,7 @@ namespace stendhal
     pbuff_size(size)
   {
     // create local random number generator engine
-#ifdef USE_PCG
+#ifdef HAVE_PCG
     prng = new pcg32(seed);
 #else
     prng = new std::mt19937(seed);

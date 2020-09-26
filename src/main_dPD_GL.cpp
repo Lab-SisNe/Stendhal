@@ -34,8 +34,8 @@ Aug 11, 2020
 #include <random>
 #include <chrono>
 
-// Include pcg if compiled with -D USE_PCG
-#ifdef USE_PCG
+// Include pcg if compiled with -D HAVE_PCG
+#ifdef HAVE_PCG
 #include "pcg-cpp/pcg_random.hpp"
 #endif
 
@@ -74,7 +74,7 @@ int main ( int argc, char* argv[] )
   if (argc==4)
     std::cout << ", CSV_file: " << argv[3];
   std::cout << std::endl;
-  
+
   class stendhal::dPD_GL dpd_gl(seed);
 
   std::chrono::time_point<std::chrono::steady_clock> start;
