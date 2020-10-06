@@ -324,29 +324,10 @@ namespace stendhal
     return net_params.conn_prob[j][i];
   }
 
-  const int dPD_GL::get_N_layers(void)
+  int dPD_GL::get_N_layers(void)
   {
     return N_layers;
   }
 
-  /*
-  void dPD_GL::check_connection(std::string fname)
-  {
-    std::ofstream outfile(fname);
-    for (std::vector<gl_psc_exp*>::iterator it=neurons.begin(); it!=neurons.end(); it++) {
-      int i = (*it)->get_id();
-      std::vector<connection> *conn_list = (*it)->get_connection();
-      for (std::vector<connection>::iterator it2=(*conn_list).begin(); it2!=(*conn_list).end(); it2++) {
-	int j = (*it2).target->get_id();
-	double w = (*it2).weight;
-	double d = (*it2).delay;
-	outfile << i << ", "
-		<< j << ", "
-		<< w << ", "
-		<< d << std::endl;
-      }
-    }
-  }
-  */
 } // namespace stendhal
 

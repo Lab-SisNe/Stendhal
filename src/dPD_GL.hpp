@@ -208,7 +208,7 @@ namespace stendhal
 
     // temporary
     double get_conn_prob(int i, int j);
-    const int get_N_layers(void);
+    int get_N_layers(void);
     //    void check_connection(std::string);
   }; // class dPD_GL
       
