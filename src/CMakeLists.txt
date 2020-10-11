@@ -40,6 +40,14 @@ configure_file( stendhalconfig.h.in stendhalconfig.h )
 #add_library( dPD_GL dPD_GL.cpp )
 #add_library( gl_psc_exp gl_psc_exp.cpp )
 
+if(NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE Release)
+endif()
+
+set(CMAKE_CXX_FLAGS "-Wall -Wextra")
+set(CMAKE_CXX_FLAGS_DEBUG "-g")
+set(CMAKE_CXX_FLAGS_RELEASE "-O3")
+
 # Check if PCG is present and set compiler flag accordinglly
 find_file(HAVE_PCG pcg-cpp/pcg_random.hpp "${PROJECT_SOURCE_DIR}")
 if (NOT ${HAVE_PCG} MATCHES "HAVE_PCG-NOTFOUND")

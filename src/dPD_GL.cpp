@@ -119,7 +119,7 @@ namespace stendhal
     for (int i=0; i<N_layers; i++) {
       // Append neuron one by one to neurons vector
       // We must add one by one to correctly set node count and node ID
-      for (int j=0; j<N_scaled[i]; j++) {
+      for (int j=0; (unsigned int)j<N_scaled[i]; j++) {
 	neurons.push_back(new stendhal::gl_psc_exp(sim_params.delta_t, &rng, &udist, &buffer_pos, &buffer_size));
       }
     }
@@ -144,7 +144,7 @@ namespace stendhal
     if (!outfile.is_open())
       outfile.open("connection.txt", std::ofstream::out);
     outfile << "  N_layers: " << N_layers << '\n';
-    for (int n=0; n<N_layers; n++)
+    for (int n=0; (unsigned int)n<N_layers; n++)
       outfile << "  " << pop_ID[n][0] << ' ' << pop_ID[n][1] << '\n';
     outfile << '\n';
     
@@ -163,7 +163,7 @@ namespace stendhal
 	d_ = delay_matrix[i][j];
 	d_sd = d_ * net_params.rel_std_delay;
 	// number of synapses
-	for (int n=0; n<K_scaled[i][j]; n++) {
+	for (int n=0; (unsigned int)n<K_scaled[i][j]; n++) {
 	  // draw uniform integer between range pop_ID[j][0] and pop_ID[j][1]
 	  pre_ID = udist_int(rng, uintpre);
 	  // draw uniform integer between range pop_ID[i][0] and pop_ID[i][1]
@@ -276,7 +276,7 @@ namespace stendhal
 	// set lambda for poisson distribution; shared between neurons of the same layer
 	pparam = std::poisson_distribution<>::param_type (lam[n]);
 	// iterate through pop_ID[n][0] to pop_ID[n][1]
-	for (int i=pop_ID[n][0]; i<=pop_ID[n][1]; i++) {
+	for (int i=pop_ID[n][0]; (unsigned int)i<=pop_ID[n][1]; i++) {
 	  if (net_params.poisson_input) { // poisson input
 	    p = pdist(rng, pparam); // draw poisson distribution with rate lam[n]
 	    neurons[i-1]->add_input(p * net_params.PSP_e, (unsigned int)0);
