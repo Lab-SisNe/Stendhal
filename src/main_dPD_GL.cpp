@@ -34,8 +34,8 @@ Aug 11, 2020
 #include <random>
 #include <chrono>
 
-// Include pcg if compiled with -D HAVE_PCG
-#ifdef HAVE_PCG
+// Include pcg if compiled with -D USE_PCG
+#ifdef USE_PCG
 #include "pcg-cpp/pcg_random.hpp"
 #endif
 
@@ -69,7 +69,7 @@ int main ( int argc, char* argv[] )
   int seed = std::atoi(argv[1]);
   double t_sim = std::atof(argv[2]);
   std::cout << "Random Number Generator Engine: ";
-#ifdef HAVE_PCG
+#ifdef USE_PCG
   std::cout << "pcg32" << std::endl;
 #else
   std::cout << "mt19937" << std::endl;
