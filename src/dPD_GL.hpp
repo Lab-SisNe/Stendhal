@@ -44,11 +44,6 @@ References:
 #include <fstream>
 #include <string>
 
-// Include pcg if USE_PCG is defined; compile with -DUSEz_PCG
-#ifdef USE_PCG
-#include "pcg-cpp/pcg_random.hpp" // PCG random number generator
-#endif
-
 // Include from stendhal
 #include "gl_psc_exp.hpp"
 
@@ -66,11 +61,8 @@ namespace stendhal
     // simulation seed
     unsigned int seed;
     // random number generator engine
-#ifdef USE_PCG
-    pcg32 rng;
-#else
     std::mt19937 rng;
-#endif
+
     // Uniform random number generator
     std::uniform_real_distribution<> udist;
     // Poisson random number generator
