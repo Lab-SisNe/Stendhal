@@ -38,9 +38,9 @@ configure_file( stendhalconfig.h.in stendhalconfig.h )
 
 option( with-optimize "Enable user defined optimization. [defaul ON, when ONdefaults to '-O3']" ON )
 # Set optimzation flag. Defaults to -O3
-if ( ${with-optimize} )
-  if ( ${with-optimize} EQUAL ON )
-    with-optimize=-O3
+if ( with-optimize )
+  if ( ${with-optimize} STREQUAL ON )
+    set( with-optimize -O3 )
   endif()
   set( CMAKE_CXX_FLAGS "-Wall -Wextra ${with-optimize}" )
 else()
