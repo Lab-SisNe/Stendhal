@@ -32,6 +32,7 @@
    (1) Antonio Galves and Eva Locherbach (2013).
 */
 
+#include <iostream>
 #include "gl_psc_exp.hpp"
 
 namespace stendhal
@@ -178,20 +179,16 @@ namespace stendhal
       return 0.0;
   } // phi
 
-  /*
-  // Firing probability for arbitrary dt (in ms)
-  inline double gl_psc_exp::fprob(double V_m, double d_t)
-  {
-    return d_t*frate(V_m);
-  } // fprob
-  
-  // Firing probability for dt=0.1 ms
+  // Firing probability (unitless)
   inline double gl_psc_exp::fprob(double V_m)
   {
-    return 0.1*frate(V_m);
+    double V_diff = V_m - param.V_rheo;
+    if (V_diff > 0)
+      return std::pow(param.gamma * V_diff, param.r);
+    else
+      return 0.0;
   } // phi
-  */
-  
+
   // resize buffer
   void gl_psc_exp::resize_buffer(unsigned int len)
   {
@@ -227,7 +224,8 @@ namespace stendhal
       // This could be taken as the rate of a poisson process
       // Could we just draw a poisson with rate phi to obtain
       // the number of spikes for the time window delta_t?
-      double phi = delta_t*frate(V_m);
+      // double phi = delta_t*frate(V_m);
+      double phi = fprob(V_m);
       // Neuron fired!
       if (phi >= U_i) {
 	// Store membrane potential when neuron fired
@@ -247,6 +245,9 @@ namespace stendhal
 	  // so that a delay of dt would mean
 	  // buffer position at t+dt+dt, that is 1;
 	  unsigned int d = std::round(((*it).delay*i_delta_t));
+	  if (d == 0) {
+	    d = 1;
+	  }
 	  // call add_input method of the post-synaptic neuron
 	  (*it).target->add_input((*it).weight, d);
 	}

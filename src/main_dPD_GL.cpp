@@ -50,35 +50,39 @@ static void show_usage(std::string name)
   std::cerr << "Usage: " << name << " seed t_sim <conn_csv_data>" << std::endl
 	    << "  seed: seed for random number generator (integer)" << std::endl
 	    << "  t_sim: simulation time in (ms)" << std::endl
+	    << "  delta_t: simulation time step (ms)" << std::endl
 	    << "  conn_csv_data (optional): CSV file containing connectivity data:" << std::endl
-	    << "    if conn_csv_data is ommited, connection is randombly genenrated"
+	    << "    if conn_csv_data is ommited, connection is randomly generated"
 	    << std::endl;
 }
 
 int main ( int argc, char* argv[] )
 {
-  if ((argc < 3) || (argc > 4)) {
+  if ((argc < 4) || (argc > 5)) {
     show_usage(argv[0]);
     return 1;
   }
   int seed = std::atoi(argv[1]);
   double t_sim = std::atof(argv[2]);
+  double delta_t = std::atof(argv[3]);
   std::cout << "Random Number Generator Engine: ";
   std::cout << "mt19937" << std::endl;
   std::cout << "seed: " << seed
 	    << ", Simulation time: "
-	    << t_sim << " ms";
-  if (argc==4)
-    std::cout << ", CSV_file: " << argv[3];
+	    << t_sim << " ms"
+	    << ", Simulation time step: "
+	    << delta_t << " ms";
+  if (argc==5)
+    std::cout << ", CSV_file: " << argv[4];
   std::cout << std::endl;
 
-  class stendhal::dPD_GL dpd_gl(seed);
+  class stendhal::dPD_GL dpd_gl(seed, delta_t);
 
   std::chrono::time_point<std::chrono::steady_clock> start;
   std::chrono::time_point<std::chrono::steady_clock> end;
   std::chrono::duration<double> diff;
   
-  if (argc != 4) {
+  if (argc != 5) {
     start = std::chrono::steady_clock::now();
     dpd_gl.prepare(); //call calibrate, create_pop and connect(void)
     end = std::chrono::steady_clock::now();
@@ -99,7 +103,7 @@ int main ( int argc, char* argv[] )
     std::cout << "create_pop: " << diff.count() << " s" << std::endl;
 
     start = std::chrono::steady_clock::now();
-    dpd_gl.connect(argv[3]);
+    dpd_gl.connect(argv[4]);
     end = std::chrono::steady_clock::now();
     diff = end-start;
     std::cout << "connect: " << diff.count() << " s" << std::endl;

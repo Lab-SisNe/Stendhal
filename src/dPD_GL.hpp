@@ -176,7 +176,7 @@ namespace stendhal
     std::string spike_recorder_file {"spike_recorder.txt"};
     
   public:
-    dPD_GL(int =55);
+    dPD_GL(int =55, double =0.1);
     ~dPD_GL();
 
     // calculate auxiliary parameters

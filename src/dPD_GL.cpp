@@ -41,16 +41,16 @@ namespace stendhal
   //const int dPD_GL::N_layers = 8;
   
   // dPD_GL constructor
-  dPD_GL::dPD_GL(int s)
+  dPD_GL::dPD_GL(int s, double delta_t)
   {
     // Set random number generator seed
     seed = s;
     
-    struct simulation_parameters sim_params;
-    struct network_parameters net_params;
-
-    // Seed random number generator
+    // Seed random number generator; defaults to 55
     rng.seed(seed);
+
+    // Set simlation time step; defaulta to 0.1 ms
+    sim_params.delta_t = delta_t;
 
     // open output file;
     spike_recorder.open(spike_recorder_file);
@@ -71,6 +71,7 @@ namespace stendhal
   {
     // Calculate number of neurons based on scaling factor N_scaling
     N_cumsum[0]=0;
+
     for (int i=0; i<N_layers; i++) {
       // Scaled number of neurons
       N_scaled[i] = (unsigned int)std::round(net_params.N_full[i]*net_params.N_scaling);
@@ -217,6 +218,9 @@ namespace stendhal
 
     // read lines
     while (std::getline(input_file, line)) {
+      if (line[0] == ' ' || line.length() == 0) {
+	continue;
+      }
       // create string stream from current line
       std::stringstream ss(line);
       // clear row vector

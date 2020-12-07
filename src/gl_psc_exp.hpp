@@ -129,14 +129,10 @@ namespace stendhal
     std::vector<struct connection> conn_list;
     
     // auxiliary functions
-    void calibrate(double =0.1); // calculate auxiliary variables
     double propagator_exp(double, double, double); // calculate propagator for exponentially decaying synaptic current
     double propagator_step(double, double); // calculate propagator for step/DC current input
     inline double frate(double); // calculate firing rate in ms
-    /*
-    inline double fprob(double, double); // calculate firing probability for arbitrary dt (in ms)
-    inline double fprob(double); // calculate firing probability for dt=0.1 (ms)
-    */
+    inline double fprob(double); // calculate firing probability (unitless)
     
   public:
     // default constructor
@@ -170,9 +166,8 @@ namespace stendhal
     // manage buffer size
     void resize_buffer(unsigned int);
 
-    // evaluate neuron dynamics in continuous time
-    // simulation step size may be specified (defaults to 0.1)
-    //double evaluate(double =0.1);
+    // Calibrate
+    void calibrate(double =0.1); // calculate auxiliary variables
 
     // evaluate neuron dynamics in discrete time
     // uses simulation step already specified
