@@ -53,8 +53,8 @@ if ( CMAKE_CXX_COMPILER_ID MATCHES Intel )
 endif()
 
 # Add executable
-add_executable( stendhal_DC main_DC_frate.cpp gl_psc_exp.cpp)
+add_executable( stendhal_comp_DC_poisson main_compare_DC_poisson.cpp gl_psc_exp.cpp)
 
 # Add directory of config header to the list of paths to search for include files
-target_include_directories( stendhal_DC PUBLIC "${PROJECT_BINARY_DIR}" )
+target_include_directories( stendhal_comp_DC_poisson PUBLIC "${PROJECT_BINARY_DIR}" )
 
