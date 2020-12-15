@@ -94,7 +94,7 @@ int main ( int argc, char* argv[] )
   unsigned int buffer_size {5};
   double t = 0.0;
   double bg_rate {8.0}; // Hz
-  double PSP_e {87.8}; // pA
+  double PSC_e {87.8}; // pA
   double tau_syn {0.5}; // ms
   
   // random number generators
