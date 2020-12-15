@@ -46,16 +46,11 @@ namespace stendhal
   // pointer to global uniform distribution, pointers to buffer position and size
   gl_psc_exp::gl_psc_exp(double dt, std::mt19937 *rng, std::uniform_real_distribution<> *dist, unsigned int *pos, unsigned int *size)
   :
-    pbuff_pos(pos),
-    pbuff_size(size)
+    pbuff_pos(pos), // pointer to buffer position variable
+    pbuff_size(size), // pointer to buffer size variable
+    prng(rng), // pointer to global randon number generator engine
+    pudist(dist) // pointer to uniform distribution generator
   {
-    if (dt != delta_t) {
-      delta_t = dt;
-      i_delta_t = 1.0/dt; // multiplication is faster than division; used when divion by dt is necessary
-    }
-    if (len != *size) {
-      len = *size; // keep a copy of global buffer length; may not be necessary
-    }
     // calculate auxiliary variables that depends on dt
     calibrate(dt);
     // pointer to global random number generator engine
@@ -83,21 +78,10 @@ namespace stendhal
   // differents seed values)
   // requires pointer to buffer position and size
   gl_psc_exp::gl_psc_exp(unsigned int seed, unsigned int *pos, unsigned int *size) :
-    pbuff_pos(pos),
-    pbuff_size(size)
+    gl_psc_exp(seed, pos, size, new std::mt19937, new std::uniform_real_distribution<>)
   {
-    // create local random number generator engine
-    prng = new std::mt19937(seed);
-    // create local random number distribution
-    pudist = new std::uniform_real_distribution<>;
     // set flag for local random numbers
     is_local_rand = true;
-    // set buffer size
-    resize_buffer(*size);
-    // increment total number of nodes created (static variable)
-    nodecount++;
-    // record current node ID
-    nodeID = nodecount;
   }
 
   // simplest constructor
@@ -136,7 +120,6 @@ namespace stendhal
   void gl_psc_exp::calibrate(double dt)
   {
     delta_t = dt; // update dt value
-    i_delta_t = 1.0/dt;
 
     // calculate membrane potential leak factor
     rho_m = std::exp(-delta_t/param.tau_m);
@@ -151,7 +134,7 @@ namespace stendhal
     // calculate DC propagator
     prop_step = propagator_step(param.tau_m, param.C_m);
     // number of steps for refractory period
-    ref_count = (int)(param.tau_ref*i_delta_t);
+    ref_count = (int)(param.tau_ref/delta_t);
   } // calibrate
 
   // exponential propagator
@@ -197,7 +180,7 @@ namespace stendhal
   } // resize_buffer
 
   // evaluate with pre-defined step size (discrete algorithm)
-  double gl_psc_exp::evaluated(void)
+  double gl_psc_exp::evaluate(void)
   {
     double ret {0.0};
     if (is_ref>0) {
@@ -244,7 +227,7 @@ namespace stendhal
 	  // buffer position is at t+dt
 	  // so that a delay of dt would mean
 	  // buffer position at t+dt+dt, that is 1;
-	  unsigned int d = std::round(((*it).delay*i_delta_t));
+	  unsigned int d = std::round(((*it).delay/delta_t));
 	  if (d == 0) {
 	    d = 1;
 	  }
@@ -285,10 +268,10 @@ namespace stendhal
   }
     
   // Create connection list
-  void gl_psc_exp::connect(class gl_psc_exp* t, double w, double d)
+  void gl_psc_exp::connect(class gl_psc_exp* node, double w, double d)
   {
     // append post neuron pointer, weight (pA) and delay (ms)
-    conn_list.push_back({t, w, d});
+    conn_list.push_back({node, w, d});
   }
 
   // Receive input (discrete time)
@@ -321,6 +304,65 @@ namespace stendhal
 
   std::vector<struct connection>* gl_psc_exp::get_connection(void) {
     return &conn_list;
+  }
+
+  // Read membrane potential value
+  double gl_psc_exp::get_Vm()
+  {
+    return V_m;
+  }
+
+  // Read exitatory synaptic current value
+  double gl_psc_exp::get_ePSC()
+  {
+    return I_exc;
+  }
+
+  // Read inhibitory synaptic current value
+  double gl_psc_exp::get_iPSC()
+  {
+    return I_inh;
+  }
+
+  // Read synaptic current value
+  // sum of I_exc + I_inh
+  double gl_psc_exp::get_PSC()
+  {
+    return I_exc + I_inh;
+  }
+
+  // Read extenal current value
+  double gl_psc_exp::get_I_ext()
+  {
+    return I_ext;
+  }
+
+  // Read exitatory synaptic current mediated membrane potential change
+  // prop_exc * I_exc
+  double gl_psc_exp::get_ePSP()
+  {
+    return prop_exc * I_exc;
+  }
+
+  // Read exitatory synaptic current mediated membrane potential change
+  // prop_inh * I_inh
+  double gl_psc_exp::get_iPSP()
+  {
+    return prop_inh * I_inh;
+  }
+
+  // Read exitatory synaptic current mediated membrane potential changen
+  // prop V_exc + V_inh
+  double gl_psc_exp::get_PSP()
+  {
+    return prop_exc * I_exc + prop_inh * I_inh;
+  }
+
+  // Read external current mediated membrane potential change
+  // prop_step * I_ext
+  double gl_psc_exp::get_V_ext()
+  {
+    return prop_step * I_ext;
   }
 
 } // namespace stendhal

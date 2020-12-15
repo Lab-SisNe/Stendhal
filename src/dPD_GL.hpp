@@ -37,6 +37,51 @@ References:
   (2) Antonio Galves and Eva Locherbach (2013).
 */
 
+/* Begin Documentation
+
+namespace stendhal
+
+class stendhal::dPD_GL:
+  class implementation of the Potjans and Diesmann (2014) cortical microcircuit model
+  using the Galves and Locherbach (2013) stochastic neuron model formalism in discrete time.
+
+  private members:
+    variables:
+      static const int N_layers {8};
+        number of cortical layers
+      unsigned int seed;
+        seed for the global random number generator
+      std::mt19937 rng;
+        random number generator engine. uses C++ standard
+        Mersenne Twister pseudo-random generator of 32-bit numbers
+        with a state size of 19937 bits.
+      std::univorm_real_distribution<> udist;
+        real number uniform distribution generator in [0 1).
+	used to draw random number to test if neurons spikes or not.
+      std::poisson_distribution<> pdist;
+        poisson distribution generator
+        used to draw spikes for poisson input
+      std::uniform_int_distribution<> udist_int;
+        integer uniform distribution generator.
+        used to draw neuron indexes for creating connection.
+      std::normal_distribution<> ndist;
+        real normal distribution generator (mean=0.0 and sd=1.0)
+        used to draw weight and delay values when creating connections.
+      strut simulation_parameters sim_params;
+        structure containing simulation parameters.
+      struct network_parameters net_params;
+        structure containing network parameters:
+        unsigned int N_full[N_layers] = {20683, 5834, 21915, 5479, 4850, 1065, 14395, 2948};
+          number of neurons per layer at full scale.
+      double conn_prob[N_layers][N_layers]:
+        connection probability matrix. columns are for source, and rows for target layers. see below for specifi values.
+      unsinged int K_ext[N_layers] = {1600, 1500, 2100, 1900, 2000, 1900, 2900, 2100};
+        number of external inputs per layers.
+      
+        
+      
+ */ // End Documentation
+
 // Include C++ standard headers
 #include <vector>
 #include <bitset>
@@ -124,9 +169,9 @@ namespace stendhal
       // Factor to scale the number of neurons
       double N_scaling {1.0};
       // Mean postsynaptic current amplitude (in pA)
-      double PSP_e {87.8};
+      double PSC_e {87.8};
       // Relative standard deviation of postsynaptic current amplitude
-      double PSP_sd {0.1};
+      double PSC_sd {0.1};
       // Relative inhibitory synaptic strength
       double g {-4.0};
       // Rate of Poisonian spike generator (in Hz)
@@ -172,11 +217,14 @@ namespace stendhal
     static double t;
 
     // output file
-    std::ofstream spike_recorder;
+    std::ofstream spike_recorder;  // record spike events
     std::string spike_recorder_file {"spike_recorder.txt"};
+    std::ofstream analog_recorder;  // record membrane potential and currents
+    std::string analog_recorder_file {"analog_recorder.txt"};
+    bool analog_rec {false};
     
   public:
-    dPD_GL(int =55, double =0.1);
+    dPD_GL(int =55, double =0.1, bool =false);
     ~dPD_GL();
 
     // calculate auxiliary parameters

@@ -1,4 +1,4 @@
-/*
+d/*
 filename: PD_GL.cpp
 
 This code simulates the PD microcircuit model (Potjans and Diesmann, 2014)
@@ -41,7 +41,7 @@ namespace stendhal
   //const int dPD_GL::N_layers = 8;
   
   // dPD_GL constructor
-  dPD_GL::dPD_GL(int s, double delta_t)
+  dPD_GL::dPD_GL(int s, double delta_t, bool arec)
   {
     // Set random number generator seed
     seed = s;
@@ -54,8 +54,15 @@ namespace stendhal
 
     // open output file;
     spike_recorder.open(spike_recorder_file);
-    spike_recorder << "dt = " << sim_params.delta_t << '\n';
-    spike_recorder << "time,  neuron_ID,  V_m\n";
+    spike_recorder << "# dt = " << sim_params.delta_t << std::endl;
+    spike_recorder << "# step,  neuron_ID,  V_m (mV)" << std::endl;
+    if (arec) {
+      analog_rec = arec;
+      analog_recorder.open(analog_recorder_file);
+      analog_recorder << "# dt = " << sim_params.delta_t << std::endl;
+      analog_recorder << "# step, neuron_ID, V_m (mV), ePSC (pA), iPSC (pA), I_ext (pA), ePSP (mV), iPSP (mV), V_ext (mV)" << std::endl;
+    }
+      
     
   } // class dPD_DL constructor
 
@@ -64,6 +71,8 @@ namespace stendhal
   {
     if (spike_recorder.is_open())
       spike_recorder.close();
+    if (analog_recorder.is_open())
+      analog_recorder.close();
   } // dPD_GL desctructor
 
   // Calculate auxiliary parameters
@@ -85,7 +94,7 @@ namespace stendhal
       // mean of the poisson input
       lam[i] = net_params.bg_rate * net_params.K_ext[i] * sim_params.delta_t * 1e-3;
       // DC input that would have the same effect as the poisson input
-      DC[i] = net_params.bg_rate * net_params.K_ext[i] * net_params.PSP_e * net_params.tau_syn_ex * 1e-3;
+      DC[i] = net_params.bg_rate * net_params.K_ext[i] * net_params.PSC_e * net_params.tau_syn_ex * 1e-3;
     } // pop
     
     // Calculate number of synapses based on N_scaled and conn_prob
@@ -100,14 +109,14 @@ namespace stendhal
 	K_scaled[i][j] = (unsigned int)std::round(std::log(1.0-Ca)/std::log(1.0-1.0/(Npre*Npost)));
 	// calculate weight matrix
 	if ((j%2) == 0) {
-	  weight_matrix[i][j] = net_params.PSP_e;
+	  weight_matrix[i][j] = net_params.PSC_e;
 	  if ((j==2) && (i==0)) {
-	    weight_matrix[i][j] = 2 * net_params.PSP_e;
+	    weight_matrix[i][j] = 2 * net_params.PSC_e;
 	  }
 	  delay_matrix[i][j] = net_params.mean_delay_exc;
 	}
 	else {
-	  weight_matrix[i][j] = net_params.g * net_params.PSP_e;
+	  weight_matrix[i][j] = net_params.g * net_params.PSC_e;
 	  delay_matrix[i][j] = net_params.mean_delay_inh;
 	}
       } // pre pop
@@ -159,7 +168,7 @@ namespace stendhal
 	uintpost = std::uniform_int_distribution<>::param_type (pop_ID[i][0], pop_ID[i][1]); // post-synaptic parameters
 	// weight parameters
 	w_ = weight_matrix[i][j];
-	w_sd = w_ * net_params.PSP_sd;
+	w_sd = w_ * net_params.PSC_sd;
 	// delay parameters
 	d_ = delay_matrix[i][j];
 	d_sd = d_ * net_params.rel_std_delay;
@@ -283,7 +292,7 @@ namespace stendhal
 	for (int i=pop_ID[n][0]; i<=(int)pop_ID[n][1]; i++) {
 	  if (net_params.poisson_input) { // poisson input
 	    p = pdist(rng, pparam); // draw poisson distribution with rate lam[n]
-	    neurons[i-1]->add_input(p * net_params.PSP_e, (unsigned int)0);
+	    neurons[i-1]->add_input(p * net_params.PSC_e, (unsigned int)0);
 	  }
 	  else { // DC input
 	    neurons[i-1]->add_DC_input(DC[n]);
@@ -296,10 +305,23 @@ namespace stendhal
 
       // evaluate
       for (std::vector<gl_psc_exp*>::iterator it=neurons.begin(); it!=neurons.end(); it++) {
-	V_spiked = (*it)->evaluated();  // returns V_m when the neuron spiked; 0.0 otherwise
-	// store spike output to file
+	V_spiked = (*it)->evaluate();  // returns V_m when the neuron spiked; 0.0 otherwise
+	// store spike output to file when neuron spiked
 	if (V_spiked > 0)
 	  spike_recorder << (int)std::round(t/sim_params.delta_t) << ", " << (*it)->get_id() << ", " << V_spiked << '\n';
+	// store analog data (membrane potentials and currents) to file
+	if (analog_rec) {
+	  analog_recorder << (int)std::round(t/sim_params.delta_t) // time step
+			  << ", " << (*it)->get_id() // neuron ID
+			  << ", " << (*it)->get_Vm() // membrane potential
+			  << ", " << (*it)->get_ePSC() // excitatory post synaptic current (ePSC) (pA)
+			  << ", " << (*it)->get_iPSC() // inhibitory post synaptic current (iPSPC) (pA)
+			  << ", " << (*it)->get_I_ext() // external current (pA)
+			  << ", " << (*it)->get_ePSP() // excitatory post synaptic potential (ePSP) (mV)
+			  << ", " << (*it)->get_iPSP() // inhibitory post synaptic potential (iPSP) (mV)
+			  << ", " << (*it)->get_V_ext() // external current induced potential change (mV)
+			  << std::endl;
+	}
       }
 
       // advance ring buffer position
