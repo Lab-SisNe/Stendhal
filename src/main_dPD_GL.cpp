@@ -76,7 +76,7 @@ int main ( int argc, char* argv[] )
     std::cout << ", CSV_file: " << argv[4];
   std::cout << std::endl;
 
-  class stendhal::dPD_GL dpd_gl(seed, delta_t);
+  class stendhal::dPD_GL dpd_gl(seed, delta_t, true);
 
   std::chrono::time_point<std::chrono::steady_clock> start;
   std::chrono::time_point<std::chrono::steady_clock> end;

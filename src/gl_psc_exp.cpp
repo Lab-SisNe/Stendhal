@@ -78,7 +78,7 @@ namespace stendhal
   // differents seed values)
   // requires pointer to buffer position and size
   gl_psc_exp::gl_psc_exp(unsigned int seed, unsigned int *pos, unsigned int *size) :
-    gl_psc_exp(seed, pos, size, new std::mt19937, new std::uniform_real_distribution<>)
+    gl_psc_exp(0.1, new std::mt19937, new std::uniform_real_distribution<>, pos, size)
   {
     // set flag for local random numbers
     is_local_rand = true;
@@ -199,7 +199,7 @@ namespace stendhal
       // Clear input buffer
       W_exc[*pbuff_pos] = 0.0;
       W_inh[*pbuff_pos] = 0.0;
-      I_ext = 0.0;
+      //I_ext = 0.0;
       // Draw random number to test if neuron fires or not
       // note that udist and rng are pointers
       double U_i = (*pudist)(*prng);
@@ -292,7 +292,7 @@ namespace stendhal
   // add External current input
   void gl_psc_exp::add_DC_input(double val)
   {
-    I_ext += val;
+    I_ext = val;
   }
   
   // Receive input (continuous time)

@@ -1,4 +1,4 @@
-d/*
+/*
 filename: PD_GL.cpp
 
 This code simulates the PD microcircuit model (Potjans and Diesmann, 2014)
@@ -305,22 +305,27 @@ namespace stendhal
 
       // evaluate
       for (std::vector<gl_psc_exp*>::iterator it=neurons.begin(); it!=neurons.end(); it++) {
+	int t_;
+
+	t_ = (int)std::round(t/sim_params.delta_t); // simulation time step
 	V_spiked = (*it)->evaluate();  // returns V_m when the neuron spiked; 0.0 otherwise
 	// store spike output to file when neuron spiked
 	if (V_spiked > 0)
 	  spike_recorder << (int)std::round(t/sim_params.delta_t) << ", " << (*it)->get_id() << ", " << V_spiked << '\n';
 	// store analog data (membrane potentials and currents) to file
 	if (analog_rec) {
-	  analog_recorder << (int)std::round(t/sim_params.delta_t) // time step
-			  << ", " << (*it)->get_id() // neuron ID
-			  << ", " << (*it)->get_Vm() // membrane potential
-			  << ", " << (*it)->get_ePSC() // excitatory post synaptic current (ePSC) (pA)
-			  << ", " << (*it)->get_iPSC() // inhibitory post synaptic current (iPSPC) (pA)
-			  << ", " << (*it)->get_I_ext() // external current (pA)
-			  << ", " << (*it)->get_ePSP() // excitatory post synaptic potential (ePSP) (mV)
-			  << ", " << (*it)->get_iPSP() // inhibitory post synaptic potential (iPSP) (mV)
-			  << ", " << (*it)->get_V_ext() // external current induced potential change (mV)
-			  << std::endl;
+	  if ( (sim_params.delta_t == 1.0) or (t_ % 10 == 0) ) {
+	    analog_recorder << (int)std::round(t/sim_params.delta_t) // time step
+			    << ", " << (*it)->get_id() // neuron ID
+			    << ", " << (*it)->get_Vm() // membrane potential
+			    << ", " << (*it)->get_ePSC() // excitatory post synaptic current (ePSC) (pA)
+			    << ", " << (*it)->get_iPSC() // inhibitory post synaptic current (iPSPC) (pA)
+			    << ", " << (*it)->get_I_ext() // external current (pA)
+			    << ", " << (*it)->get_ePSP() // excitatory post synaptic potential (ePSP) (mV)
+			    << ", " << (*it)->get_iPSP() // inhibitory post synaptic potential (iPSP) (mV)
+			    << ", " << (*it)->get_V_ext() // external current induced potential change (mV)
+			    << std::endl;
+	  }
 	}
       }
 
