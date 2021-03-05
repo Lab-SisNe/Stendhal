@@ -227,7 +227,7 @@ namespace stendhal
 
     // read lines
     while (std::getline(input_file, line)) {
-      if (line[0] == ' ' || line.length() == 0) {
+      if (line[0] == ' ' || line[0] == '#' || line.length() == 0) {
 	continue;
       }
       // create string stream from current line
