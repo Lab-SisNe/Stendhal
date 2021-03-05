@@ -153,9 +153,9 @@ namespace stendhal
     // pre_ID post_ID weight delay
     if (!outfile.is_open())
       outfile.open("connection.txt", std::ofstream::out);
-    outfile << "  N_layers: " << N_layers << '\n';
+    outfile << "# N_layers: " << N_layers << '\n';
     for (int n=0; n<N_layers; n++)
-      outfile << "  " << pop_ID[n][0] << ' ' << pop_ID[n][1] << '\n';
+      outfile << "# " << pop_ID[n][0] << ' ' << pop_ID[n][1] << '\n';
     outfile << '\n';
     
     // create connection
