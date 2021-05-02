@@ -3,6 +3,8 @@ filename: CMakeLists.txt
 
 This code simulates the PD microcircuit model (Potjans and Diesmann, 2014)
 with the GL (Galves and Locherbach, 2013) neuron in discrete time.
+The leak function is an exponentially decaying function.
+For the pseudo random number generation, the xoroshiro128+ algorithm was used.
 
 This code is part of STENDHAL package.
 A NeuroMat package for simulate neuron networks, and analyse data.
@@ -27,7 +29,7 @@ Aug 11, 2020
 cmake_minimum_required( VERSION 3.15 )
 
 # Set project name and version
-project( stendhal VERSION 0.1 )
+project( stendhal VERSION 0.2 )
 
 # Specify the C++ standard
 set( CMAKE_CXX_STANDARD 11)
@@ -53,8 +55,8 @@ if ( CMAKE_CXX_COMPILER_ID MATCHES Intel )
 endif()
 
 # Add executable
-add_executable( stendhal_PD main_dPD_GL.cpp dPD_GL.cpp gl_psc_exp.cpp)
+add_executable( dGLPD_delta main_dGLPD_delta.cpp dGLPD_delta.cpp gl_psc_delta.cpp)
 
 # Add directory of config header to the list of paths to search for include files
-target_include_directories( stendhal_PD PUBLIC "${PROJECT_BINARY_DIR}" )
+target_include_directories( dGLPD_delta PUBLIC "${PROJECT_BINARY_DIR}" )
 
