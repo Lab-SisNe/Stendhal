@@ -54,7 +54,7 @@ namespace stendhal
     // Set simlation time step; defaults to 0.1 ms
     sim_params.delta_t = delta_t;
     // set ticks_per_ms based on delta_t value;
-    ticks_per_ms = std::round(1/delta_t);
+    sim_params.ticks_per_ms = std::round(1/delta_t);
 
     // open output file;
     spike_recorder.open(spike_recorder_file);
@@ -204,7 +204,7 @@ namespace stendhal
 	  if (d > d_max)
 	    d_max = d;
 	  // create connetion
-	  neurons[pre_ID-1]->connect(neurons[post_ID-1], w, d, std::round(d/sim_params.delta_t));
+	  neurons[pre_ID-1]->connect(neurons[post_ID-1], w, d, std::round(d*sim_params.ticks_per_ms));
 	  // store connection
 	  outfile << pre_ID << ", "  << post_ID << ", " << w << ", " << d << '\n';
 	} // loop for number of synapses
@@ -249,7 +249,7 @@ namespace stendhal
       w = std::stof(row[2]);
       d = std::stof(row[3]);
       // Connect node
-      neurons[i-1]->connect(neurons[j-1], w, d, std::round(d/sim_params.delta_t));
+      neurons[i-1]->connect(neurons[j-1], w, d, std::round(d*sim_params.ticks_per_ms));
       if (d > d_max)
 	d_max = d;
     }
@@ -277,7 +277,7 @@ namespace stendhal
   // simulate
   void dGLPD::simulate(double t_sim)
   {
-    simulate(std::round(t_sim/delta_t));
+    simulate(std::round(t_sim*sim_params.ticks_per_ms));
   }
 
   void dGLPD::simulate(int n_sim)
@@ -292,7 +292,7 @@ namespace stendhal
 
     // iterate for a period of t_sim; to do so, t must be added to t_sim
     // to account for simulation starting at time t
-    t_sim += nt;
+    n_sim += nt;
     while (nt<=n_sim) {
       // Apply input
       // iterate through layers
@@ -316,7 +316,7 @@ namespace stendhal
       nt++; // step
 
       // check if record analog data
-      bool is_analog_rec = (analog_rec and ((nt % ticks_per_ms) == 0) )
+      bool is_analog_rec = (analog_rec and ((nt % sim_params.ticks_per_ms) == 0) )
       // evaluate
       for (std::vector<gl_psc_delta*>::iterator it=neurons.begin(); it!=neurons.end(); it++) {
 	V_spiked = (*it)->evaluate();  // returns V_m when the neuron spiked; 0.0 otherwise
@@ -353,7 +353,7 @@ namespace stendhal
     // plus one, as during simulation the position buff_pos is at t+dt
     // if a delay of buff_size is to be added, it will be added at the
     // same position as t+dt, which will be erased after neuron evaluation.
-    buffer_size = std::round(d/sim_params.delta_t)+1;
+    buffer_size = std::round(d*sim_params.ticks_per_ms)+1;
     // iterate through all neurons to update buffer size
     for (std::vector<gl_psc_delta*>::iterator it=neurons.begin(); it!=neurons.end(); it++)
       (*it)->resize_buffer(buffer_size);
