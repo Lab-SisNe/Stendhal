@@ -335,7 +335,6 @@ namespace stendhal
 			  << ", " << (*it)->get_iPSP() // inhibitory post synaptic potential (iPSP) (mV)
 			  << ", " << (*it)->get_V_ext() // external current induced potential change (mV)
 			  << std::endl;
-	  }
 	}
       }
 
