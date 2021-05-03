@@ -169,9 +169,9 @@ namespace stendhal
       // Number of external connections to the different populations
       unsigned int K_ext[N_layers] {1600, 1500, 2100, 1900, 2000, 1900, 2900, 2100};
       // Factor to scale indegrees
-      double K_scaling {0.1};
+      double K_scaling {1.0};
       // Factor to scale the number of neurons
-      double N_scaling {0.1};
+      double N_scaling {1.0};
       // Mean postsynaptic potential amplitude (in mV)
       double PSP_e {0.15};
       // Relative standard deviation of postsynaptic potential amplitude
