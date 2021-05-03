@@ -316,7 +316,7 @@ namespace stendhal
       nt++; // step
 
       // check if record analog data
-      bool is_analog_rec = (analog_rec and ((nt % sim_params.ticks_per_ms) == 0) )
+      bool is_analog_rec = (analog_rec and ((nt % sim_params.ticks_per_ms) == 0) );
       // evaluate
       for (std::vector<gl_psc_delta*>::iterator it=neurons.begin(); it!=neurons.end(); it++) {
 	V_spiked = (*it)->evaluate();  // returns V_m when the neuron spiked; 0.0 otherwise
