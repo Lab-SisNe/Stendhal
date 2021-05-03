@@ -40,6 +40,7 @@ Apr 23, 2021
 namespace stendhal
 {
   double dGLPD::t = 0.0;
+  int dGLPD::nt = 0;
   //const int dGLPD::N_layers = 8;
   
   // dGLPD constructor
