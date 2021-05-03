@@ -278,10 +278,10 @@ namespace stendhal
   // simulate
   void dGLPD::simulate(double t_sim)
   {
-    simulate(std::round(t_sim*sim_params.ticks_per_ms));
+    simulate_(std::round(t_sim*sim_params.ticks_per_ms));
   }
 
-  void dGLPD::simulate(int n_sim)
+  void dGLPD::simulate_(int n_sim)
   {
     double V_spiked;
     unsigned int p;
@@ -294,50 +294,49 @@ namespace stendhal
     // iterate for a period of t_sim; to do so, t must be added to t_sim
     // to account for simulation starting at time t
     n_sim += nt;
-    while (nt<=n_sim) {
-      // Apply input
-      // iterate through layers
-      for (int n=0; n<N_layers; n++) {
-	// set lambda for poisson distribution; shared between neurons of the same layer
-	pparam = std::poisson_distribution<>::param_type (lam[n]);
-	// iterate through pop_ID[n][0] to pop_ID[n][1]
-	for (int i=pop_ID[n][0]; i<=(int)pop_ID[n][1]; i++) {
-	  if (net_params.poisson_input) { // poisson input
-	    p = pdist(prng, pparam); // draw poisson distribution with rate lam[n]
-	    neurons[i-1]->add_input(p * net_params.PSP_e, (unsigned int)0);
-	  }
-	  else { // DC input
-	    neurons[i-1]->add_DC_input(DC[n]);
-	  }
-	}
-      }
-    
+    while (nt<n_sim) {
       // evolve time
       t += sim_params.delta_t; // ms
       nt++; // step
 
       // check if record analog data
       bool is_analog_rec = (analog_rec and ((nt % sim_params.ticks_per_ms) == 0) );
-      // evaluate
-      for (std::vector<gl_psc_delta*>::iterator it=neurons.begin(); it!=neurons.end(); it++) {
-	V_spiked = (*it)->evaluate();  // returns V_m when the neuron spiked; 0.0 otherwise
-	// store spike output to file when neuron spiked
-	if (V_spiked != 0)
-	  spike_recorder << t << ", " << (*it)->get_id() << ", " << V_spiked << '\n';
-	// store analog data (membrane potentials and currents) to file
-	if (is_analog_rec) {
-	  analog_recorder << t //
-			  << ", " << (*it)->get_id() // neuron ID
-			  << ", " << (*it)->get_Vm() // membrane potential
-			  << ", " << (*it)->get_ePSC() // excitatory post synaptic current (ePSC) (mV)
-			  << ", " << (*it)->get_iPSC() // inhibitory post synaptic current (iPSC) (mV)
-			  << ", " << (*it)->get_I_ext() // external current (pA)
-			  << ", " << (*it)->get_ePSP() // excitatory post synaptic potential (ePSP) (mV)
-			  << ", " << (*it)->get_iPSP() // inhibitory post synaptic potential (iPSP) (mV)
-			  << ", " << (*it)->get_V_ext() // external current induced potential change (mV)
-			  << std::endl;
-	}
-      }
+
+      // iterate through layers
+      for (int n=0; n<N_layers; n++) {
+	// set lambda for poisson distribution; shared between neurons of the same layer
+	pparam = std::poisson_distribution<>::param_type (lam[n]);
+	// iterate through pop_ID[n][0] to pop_ID[n][1]
+	for (int i=pop_ID[n][0]; i<=(int)pop_ID[n][1]; i++) {
+	  // Apply input
+	  if (net_params.poisson_input) { // poisson input
+	    p = pdist(prng, pparam); // draw poisson distribution with rate lam[n]
+	    neurons[i-1]->add_input(p * net_params.PSP_e, (unsigned int)0);
+	  }
+	  else { // DC input
+	    neurons[i-1]->add_DC_input(DC[n]);
+	  } // external input
+    
+	  // evaluate
+	  V_spiked = neurons[i-1]->evaluate();  // returns V_m when the neuron spiked; 0.0 otherwise
+	  // store spike output to file when neuron spiked
+	  if (V_spiked != 0)
+	    spike_recorder << t << ", " << neurons[i-1]->get_id() << ", " << V_spiked << '\n';
+	  // store analog data (membrane potentials and currents) to file
+	  if (is_analog_rec) {
+	    analog_recorder << t //
+			    << ", " << neurons[i-1]->get_id() // neuron ID
+			    << ", " << neurons[i-1]->get_Vm() // membrane potential
+			    << ", " << neurons[i-1]->get_ePSC() // excitatory post synaptic current (ePSC) (mV)
+			    << ", " << neurons[i-1]->get_iPSC() // inhibitory post synaptic current (iPSC) (mV)
+			    << ", " << neurons[i-1]->get_I_ext() // external current (pA)
+			    << ", " << neurons[i-1]->get_ePSP() // excitatory post synaptic potential (ePSP) (mV)
+			    << ", " << neurons[i-1]->get_iPSP() // inhibitory post synaptic potential (iPSP) (mV)
+			    << ", " << neurons[i-1]->get_V_ext() // external current induced potential change (mV)
+			    << std::endl;
+	  } // if is_analog_rec
+	} // population
+      } // layer
 
       // advance ring buffer position
       // all nodes share this same adress

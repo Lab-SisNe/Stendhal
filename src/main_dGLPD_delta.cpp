@@ -67,6 +67,8 @@ int main ( int argc, char* argv[] )
   int seed = std::atoi(argv[1]);
   double t_sim = std::atof(argv[2]);
   double delta_t = std::atof(argv[3]);
+  int n_sim = std::round(t_sim/delta_t);
+  int ticks_per_ms = std::round(1/delta_t);
   
   std::cout << "Random Number Generator Engine: ";
   std::cout << "xoroshiro128+" << std::endl;
@@ -111,7 +113,8 @@ int main ( int argc, char* argv[] )
     diff = end-start;
     std::cout << "connect: " << diff.count() << " s" << std::endl;
   }
-  
+
+  std::cout << "t_sim: " << t_sim << std::endl;
   start = std::chrono::steady_clock::now();
   dglpd.simulate(t_sim);
   end = std::chrono::steady_clock::now();
