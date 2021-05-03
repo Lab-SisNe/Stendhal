@@ -67,6 +67,7 @@ int main ( int argc, char* argv[] )
   int seed = std::atoi(argv[1]);
   double t_sim = std::atof(argv[2]);
   double delta_t = std::atof(argv[3]);
+  
   std::cout << "Random Number Generator Engine: ";
   std::cout << "xoroshiro128+" << std::endl;
   std::cout << "seed: " << seed
@@ -78,7 +79,7 @@ int main ( int argc, char* argv[] )
     std::cout << ", CSV_file: " << argv[4];
   std::cout << std::endl;
 
-  class stendhal::dGLPD dglpd(seed, delta_t, true);
+  class stendhal::dGLPD dglpd(seed, delta_t, false);
 
   std::chrono::time_point<std::chrono::steady_clock> start;
   std::chrono::time_point<std::chrono::steady_clock> end;

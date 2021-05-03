@@ -39,7 +39,7 @@
 #+STARTUP: indent
 #+LaTeX_CLASS: koma-article
 #+LaTeX_CLASS_OPTIONS: [11pt]
-#+LaTeX_HEADER: \renewenvironment{verbatim}{\begin{alltt} \scriptsize \color{Bittersweet} \vspace{0.2cm} }{\vspace{0.2cm} \end{alltt} \normalsize \color{black}}
+#+LaTeX_HEADER: \renewenvironment{verbatim}{\begin{alltt} \scriptsize \color{Bittersweet} \vspace{0.2cm} }{\vspace{0.2cm} \end{alltt} v\normalsize \color{black}}
 #+LaTeX_HEADER: \definecolor{lightcolor}{gray}{.55}
 #+LaTeX_HEADER: \definecolor{shadecolor}{gray}{.95}
 #+PROPERTY: header-args :eval no-export
@@ -50,12 +50,13 @@
 #+BEGIN_SRC emacs-lisp :results silent :exports none
   ;; load ox-latex
   (require 'ox-latex)
+  (require 'cl-lib)
   ;; if "koma-article" is already defined, remove it
   (delete (find "koma-article" org-latex-classes :key 'car :test 'equal) org-latex-classes)
   ;; add "koma-article" to list org-latex-classes
   (add-to-list 'org-latex-classes
                '("koma-article"
-                 "\\documentclass[koma,11pt]{scrartcl}
+                  "\\documentclass[koma,11pt]{scrartcl}
                    \\usepackage[utf8]{inputenc}
                    \\usepackage{cmbright}
                    \\usepackage[usenames,dvipsnames]{xcolor}
@@ -89,7 +90,6 @@
           "pdflatex -shell-escape -interaction nonstopmode -output-directory %o %f"))
 #+END_SRC
 
-
 #+NAME: stderr-redirection
 #+BEGIN_SRC emacs-lisp :exports none :results silent
 ;; Redirect stderr output to stdout so that it gets printed correctly (found on
@@ -108,8 +108,113 @@ set terminal pngcairo size 1000,1000
 
 # * Introduction :export:
 * Model considered :export:
+** The original PD model :export:
+<<sec:PD>>
 
-** Network :export:
+The PD model (Potjans and Diesmann, 2014) consists of 8 neuronal populations, representing excitatory and inhibitory populations of 4 cortical layers, namely, layers 2/3 (L23e/i), 4 (L4e/i), 5 (L5e/i) and 6 (L6e/i), where e denotes excitatory and i inhibitory. The number of neurons of each population is shown in table \ref{table:PD_num_neurons}, which totalizes 77169 neurons.
+\begin{table}[htbp]
+    \centering
+    \caption{Number of neurons per cortical layer}
+    \label{table:PD_num_neurons}
+    \begin{tabular}{llllllll}
+         \multicolumn{1}{c}{L23e} & \multicolumn{1}{c}{L23i} & \multicolumn{1}{c}{L4e} & \multicolumn{1}{c}{L4i} & \multicolumn{1}{c}{L5e} & \multicolumn{1}{c}{L5i} & \multicolumn{1}{c}{L6e} & \multicolumn{1}{c}{L6i} \\
+         20683 & 5834 & 21915 & 5479 & 4850 & 1065 & 14395 & 2948 
+    \end{tabular}
+\end{table}
+
+*** Membrane potential dynamics
+<<sec:PD_membrane>>
+
+All neurons are described with the same LIF (leaky integrate-and-fire) dynamics (eq. (\ref{eq:LIF}))
+\begin{equation}
+  \begin{aligned}
+    \frac{dV_m(t)}{dt} &= \begin{cases} 0 & \text{if neuron is refractory} \\
+    -\frac{V_m(t)}{\tau_m} + \frac{S_{syn}^i(t)}{C_m} & \text{otherwise}
+    \end{cases} \\
+    \frac{dI_{syn}(t)}{dt} &= \begin{cases} 0 & \text{if neuron is refractory} \\
+    -\frac{I_{syn}(t)}{\tau_{syn}} + \sum_j{W_j} & \text{otherwise}
+    \end{cases} \\
+    \text{if } V_m^i(t) \geq V_{th} &\quad \text{neuron spiked and refractory}
+  \end{aligned}
+  \label{eq:LIF}
+\end{equation}
+where $V_m(t)$ is the membrane potential, $\tau_m = 10$ ms is the membrane time constant representing the leakage effect, $C_m = 250$ pF the membrane capacitance, $V_{th} = 15$ mV the threshold potential in which a neuron fires when its membrane potential exceeds this value, $I_{syn}(t)$ the membrane current elicited by synaptic inputs from pre-synaptic neurons  $j$ ($W_j$), and $\tau_{syn} = 0.5$ ms the synaptic time constant indicating the dynamics of synaptic receptor channel. The refractory period ($\tau_{ref}$), the period in which a neuron stays silent after emmiting a spike, was 2 ms.
+
+
+*** The graph of interaction
+<<sec:PD_graph>>
+
+Neurons are connected following the connection probability between neuronal populations shown in table \ref{table:PD_conectivity}.
+The resulting graph of interaction is a directed graph with nearly 300 million edges.
+
+\begin{table}[htbp]
+    \centering
+    \caption{\label{table:PD_conectivity} Connection probability between neuronal populations
+    }
+    \begin{tabular}{lccccccccc}
+         &  & \multicolumn{8}{c}{from} \tabularnewline
+         &  & L23e & L23i & L4e & L4i & L5e & L5i & L6e & L6i \tabularnewline
+         & L23e & 0.101 & 0.169 & 0.044 & 0.082 & 0.032 & 0.0 & 0.008 & 0.0 \tabularnewline
+         & L23i & 0.135 & 0.137 & 0.032 & 0.052 & 0.075 & 0.0 & 0.004 & 0.0 \tabularnewline
+         & L4e & 0.008 & 0.006 & 0.050 & 0.135 & 0.007 & 0.0003 & 0.045 & 0.0 \tabularnewline
+         to & L4i & 0.069 & 0.003 & 0.079 & 0.160 & 0.003 & 0.0 & 0.106 & 0.0 \tabularnewline
+         & L5e & 0.100 & 0.062 & 0.051 & 0.006 & 0.083 & 0.373 & 0.020 & 0.0 \tabularnewline
+         & L5i & 0.055 & 0.027 & 0.026 & 0.002 & 0.060 & 0.316 & 0.009 & 0.0 \tabularnewline
+         & L6e & 0.016 & 0.007 & 0.021 & 0.017 & 0.057 & 0.020 & 0.040 & 0.225 \tabularnewline
+         & L6i & 0.036 & 0.001 & 0.003 & 0.001 & 0.028 & 0.008 & 0.066 & 0.144 
+         \tabularnewline
+    \end{tabular}
+\end{table}
+
+Moreover, synaptic connections between neurons $j$ and $i$ are described by the synaptic weights ($w_{j \to i}$) and transmission delay ($d_{j \to i}$), drawn from a clipped normal distribution, and are different for excitatory and inhibitory synapses as shown in table \ref{table:PD_synaptic_weight_delay}. $dt$ is the simulation time step, indicating that synapse transmission requires at least one time step.
+
+\begin{table}[htb!]
+    \centering
+    \caption{Synaptic weight and delay. Synaptic weights are clipped at 0, and synaptic delays are clipped at simulation step ($d_t = 0.1$ ms)}
+    \label{table:PD_synaptic_weight_delay}
+    \begin{tabular}{lcl}
+        %  \multicolumn{2}{c}{excitatory} \\
+         &
+         $w_e$ & $\mathcal{N}$($\mu = 87.8, \sigma = 8.8$) pA; $w_e > 0$ \\
+         excitatory & $d_e$ & $\mathcal{N}$($\mu=1.5 , \sigma = 0.75$) ms; $d_e \geq dt$ \\
+        %  \multicolumn{2}{c}{inhibitory}  \\
+         &
+         $w_i$ & $\mathcal{N}$($\mu = -351.2, \sigma = 35.1$) pA; $w_i < 0$ \\
+         inhibitory & $d_i$ & $\mathcal{N}$($\mu=0.8 , \sigma = 0.4$) ms; $d_i \geq dt$
+    \end{tabular}
+\end{table}
+
+\textbf{Remark 1} A synaptic weight of $87.8$ pA will elicit a maximum membrane potential change of approximately $0.15$ mV.
+
+\textbf{Remark 2} The number of synapses ($K$) between any two populations are calculated from:
+\begin{equation}
+    K = \frac{\log(1 - C_a)}{\log(1-1/(N_{pre}N_{post}))},
+    \label{eq:PD_K}
+\end{equation}
+where $C_a$ is the connection probability taken from table \ref{table:PD_conectivity}, $N_{pre}$ and $N_{post}$ the number of neurons in the pre- and post-synaptic population, respectively, taken from table \ref{table:PD_num_neurons}. The $K$ pairs are then randomly chosen, so that multiple synapses with different parameter values for any pair can occur. This phenomenon is know as multapses.
+
+\textbf{Remark 3} The connection weight between neurons of L4e to L23e is doubled, that is, taken from a clipped normal distribution of $\mathcal{N}$($\mu = 175.6, \sigma = 17.6$) pA
+
+*** Background input
+<<sec:PD_background>>
+
+The network is driven by a constant external input that can be described as Poissonian spike trains ($rate = 8$ Hz) or constant current. The number of external inputs is layer dependent as shown in table \ref{table:PD_ext_num_neurons}.
+
+\begin{table}[htbp]
+    \centering
+    \caption{Number of external inputs onto each cortical layer}
+    \label{table:PD_ext_num_neurons}
+    \begin{tabular}{llllllll}
+         \multicolumn{1}{c}{L23e} & \multicolumn{1}{c}{L23i} & \multicolumn{1}{c}{L4e} & \multicolumn{1}{c}{L4i} & \multicolumn{1}{c}{L5e} & \multicolumn{1}{c}{L5i} & \multicolumn{1}{c}{L6e} & \multicolumn{1}{c}{L6i} \\
+         1600 & 1500 & 2100 & 1900 & 2000 & 1900 & 2900 & 2100 
+    \end{tabular}
+\end{table}
+
+\textbf{Remark 1} In the case of Poissonian spike trains input, every neuron on each layer receives independent Poissonian spike trains with $rate = 8 \times n$, where $n$ is the number of external inputs, which is the same as generating $n$ Poissonian spike trains of $8$ Hz and applying all of it to the neuron. Note that all input has fixed weight and delay values of $87.8$ pA and $1.5$ ms, respectively.
+
+** The GL model                                                     :export:
+<<sec:GL>>
+
 We consider a network made of (N) neurons in a discrete time setting. We write $I = \{1,\ldots,N\}$ the neurons' index set. The neurons can be viewed as the nodes of a /directed graph/. The synapses between neurons / edges of the graph are specified by a quadruple:
 - $j \in I$ :: The /.presynaptic neuron/.
 - $i \in I$ :: The /postsynaptic neuron/.
@@ -284,110 +389,6 @@ If we try 9 steps ago we get:
 
 
 ** Simulating membrane dynamics with synaptic input (PD model case)
-
-*** The PD model
-
-The PD model (Potjans and Diesmann, 2014) consists of 8 neuronal populations, representing excitatory and inhibitory populations of 4 cortical layers, namely, layers 2/3 (L23e/i), 4 (L4e/i), 5 (L5e/i) and 6 (L6e/i), where e denotes excitatory and i inhibitory. The number of neurons of each population is shown in table \ref{table:PD_num_neurons}, which totalizes 77169 neurons.
-\begin{table}[htbp]
-    \centering
-    \caption{Number of neurons per cortical layer}
-    \label{table:PD_num_neurons}
-    \begin{tabular}{llllllll}
-         \multicolumn{1}{c}{L23e} & \multicolumn{1}{c}{L23i} & \multicolumn{1}{c}{L4e} & \multicolumn{1}{c}{L4i} & \multicolumn{1}{c}{L5e} & \multicolumn{1}{c}{L5i} & \multicolumn{1}{c}{L6e} & \multicolumn{1}{c}{L6i} \\
-         20683 & 5834 & 21915 & 5479 & 4850 & 1065 & 14395 & 2948 
-    \end{tabular}
-\end{table}
-
-\paragraph{Membrane potential dynamics}
-
-All neurons are described with the same LIF (leaky integrate-and-fire) dynamics (eq. (\ref{eq:LIF}))
-\begin{align}
-    \dot{V_t(i)} &= \begin{cases} 0 & \text{if } X_t(i) = 1 \text{ or } L_t(i) < t < L_t(i) + \tau_{ref}\\
-    -\frac{V_t(i)}{\tau_m} + \frac{1}{C_m}\left(S_t^{syn}(i) + S_t^{ext}(i)\right) & \text{otherwise}
-    \end{cases} \nonumber \\
-    X_t(i) &= \begin{cases}\delta_t & \text{if } V_t(i) \ge V_{th} \\
-    0 & \text{otherwise}
-    \end{cases} \label{eq:LIF} \\
-    \dot{S_t^{syn}(i)} &= -\frac{S_t^{syn}(i)}{\tau_{syn}} + \sum_j{w_{j \to i}}X_{t-d_{j \to i}}(j)
-    \label{eq:Isyn}
-\end{align}
-where $V_t(i)$ is the membrane potential of neuron $i$, $\tau_m = 10$ ms is the membrane time constant representing the leakage effect, $C_m = 250$ pF the membrane capacitance, $V_{th} = 15$ mV the threshold potential in which a neuron fires when its membrane potential exceeds this value, $\tau_{ref} = 2$ ms the refractory period in which a neuron stays silent after emmiting a spike, $S_t^{syn}(i)$ the membrane current elicited by synaptic inputs from neurons  $j$ to $i$, $\tau_{syn} = 0.5$ ms the synaptic time constant indicating the time a synaptic receptor channel remains open, $w_{j \to i}$ the synaptic strength from neuron j to i, $d_{j \to i}$ the synaptic delay indicating the time it takes for a spiking activity of neuron $j$ to affect neuron $i$, $S_t^{ext}(i)$ the externally applied membrane current, and $L_t(i)$ denotes the time of the last spike of neuron i.
-
-
-\paragraph{The graph of interaction}
-
-Neurons are connected following the connection probability between neuronal populations shown in table \ref{table:PD_conectivity}.
-The resulting graph of interaction is a directed graph with nearly 300 million edges.
-
-\begin{table}[htbp]
-    \centering
-    \caption{\label{table:PD_conectivity} Connection probability between neuronal populations
-    }
-    \begin{tabular}{lccccccccc}
-         &  & \multicolumn{8}{c}{from} \tabularnewline
-         &  & L23e & L23i & L4e & L4i & L5e & L5i & L6e & L6i \tabularnewline
-         & L23e & 0.101 & 0.169 & 0.044 & 0.082 & 0.032 & 0.0 & 0.008 & 0.0 \tabularnewline
-         & L23i & 0.135 & 0.137 & 0.032 & 0.052 & 0.075 & 0.0 & 0.004 & 0.0 \tabularnewline
-         & L4e & 0.008 & 0.006 & 0.050 & 0.135 & 0.007 & 0.0003 & 0.045 & 0.0 \tabularnewline
-         to & L4i & 0.069 & 0.003 & 0.079 & 0.160 & 0.003 & 0.0 & 0.106 & 0.0 \tabularnewline
-         & L5e & 0.100 & 0.062 & 0.051 & 0.006 & 0.083 & 0.373 & 0.020 & 0.0 \tabularnewline
-         & L5i & 0.055 & 0.027 & 0.026 & 0.002 & 0.060 & 0.316 & 0.009 & 0.0 \tabularnewline
-         & L6e & 0.016 & 0.007 & 0.021 & 0.017 & 0.057 & 0.020 & 0.040 & 0.225 \tabularnewline
-         & L6i & 0.036 & 0.001 & 0.003 & 0.001 & 0.028 & 0.008 & 0.066 & 0.144 
-         \tabularnewline
-    \end{tabular}
-\end{table}
-
-The values of $w_{j \to i}$ and $d_{j \to i}$ in eq. (\ref{eq:Isyn}) are drawn from a clipped normal distribution, and are different for excitatory and inhibitory synapses as shown in table \ref{table:PD_synaptic_weight_delay}.
-
-\begin{table}[htb!]
-    \centering
-    \caption{Synaptic weight and delay. Synaptic weights are clipped at 0, and synaptic delays are clipped at simulation step ($d_t = 0.1$ ms)}
-    \label{table:PD_synaptic_weight_delay}
-    \begin{tabular}{lcl}
-        %  \multicolumn{2}{c}{excitatory} \\
-         &
-         $w_e$ & $\mathcal{N}$($\mu = 87.8, \sigma = 8.8$) pA \\
-         excitatory & $d_e$ & $\mathcal{N}$($\mu=1.5 , \sigma = 0.75$) ms \\
-        %  \multicolumn{2}{c}{inhibitory}  \\
-         &
-         $w_i$ & $\mathcal{N}$($\mu = -351.2, \sigma = 35.1$) pA \\
-         inhibitory & $d_i$ & $\mathcal{N}$($\mu=0.8 , \sigma = 0.4$) ms
-    \end{tabular}
-\end{table}
-
-Note that these parameters are not true normally distributed, as the weight of excitatory synapses ($w_e$) are never negative, and thus clipped at zero, whereas the weights of inhibitory synapses ($w_i$) are never positive, and similarly clipped at zero. In addition synaptic delays are only positive values and clipped at the simulation step ($d_t = 0.1$ ms). In other words, synaptic transmission is never instantaneous, having always one simulation step delay.
-
-\textbf{Remark 1} A synaptic weight of $87.8$ pA will elicit a maximum membrane potential change of approximately $0.15$ mV.
-
-\textbf{Remark 2} The number of synapses ($K$) between any two populations are calculated from:
-\begin{equation}
-    K = \frac{\log(1 - C_a)}{\log(1-1/(N_{pre}N_{post}))},
-    \label{eq:PD_K}
-\end{equation}
-where $C_a$ is the connection probability taken from table \ref{table:PD_conectivity}, $N_{pre}$ and $N_{post}$ the number of neurons in the pre- and post-synaptic population, respectively, taken from table \ref{table:PD_num_neurons}. The $K$ pairs are then randomly chosen, so that multiple synapses with different parameter values for any pair can occur. This phenomenon is know as multapses.
-
-\textbf{Remark 3} The connection weight between neurons of L4e to L23e is doubled, that is, taken from a clipped normal distribution of $\mathcal{N}$($\mu = 175.6, \sigma = 17.6$) pA
-
-\paragraph{Background input}
-
-The network is driven by a constant external input that can be described as Poissonian spike trains ($rate = 8$ Hz) or constant current. The number of external inputs is layer dependent as shown in table \ref{table:PD_ext_num_neurons}.
-
-\begin{table}[htbp]
-    \centering
-    \caption{Number of external inputs onto each cortical layer}
-    \label{table:PD_ext_num_neurons}
-    \begin{tabular}{llllllll}
-         \multicolumn{1}{c}{L23e} & \multicolumn{1}{c}{L23i} & \multicolumn{1}{c}{L4e} & \multicolumn{1}{c}{L4i} & \multicolumn{1}{c}{L5e} & \multicolumn{1}{c}{L5i} & \multicolumn{1}{c}{L6e} & \multicolumn{1}{c}{L6i} \\
-         1600 & 1500 & 2100 & 1900 & 2000 & 1900 & 2900 & 2100 
-    \end{tabular}
-\end{table}
-
-\textbf{Remark 1} In the case of Poissonian spike trains input, every neuron on each layer receives independent Poissonian spike trains with $rate = 8 \times n$, where $n$ is the number of external inputs, which is the same as generating $n$ Poissonian spike trains of $8$ Hz and applying all of it to the neuron. Note that all input has fixed weight and delay values of $87.8$ pA and $1.5$ ms, respectively.
-
-\color{red}
-\textbf{Remark 2} To a fist approximation, I was using the constant current approach, but it was decided on the meeting of June, 24, 2020 that ONLY the Poissonian spike train approach should be addressed.
-\color{black}
 
 *** Simulating the stochastic PD model: discrete version
 

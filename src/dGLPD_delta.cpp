@@ -51,16 +51,20 @@ namespace stendhal
     // Seed random number generator; defaults to 55
     prng.seed(seed);
 
-    // Set simlation time step; defaulta to 0.1 ms
+    // Set simlation time step; defaults to 0.1 ms
     sim_params.delta_t = delta_t;
+    // set ticks_per_ms based on delta_t value;
+    ticks_per_ms = std::round(1/delta_t);
 
     // open output file;
     spike_recorder.open(spike_recorder_file);
-    spike_recorder << "# dt = " << sim_params.delta_t << std::endl;
+    spike_recorder << "# seed = " << seed << std::endl;
+    spike_recorder << "# dt = " << sim_params.delta_t << std::endl;    
     spike_recorder << "# step,  neuron_ID,  V_m (mV)" << std::endl;
     if (arec) {
       analog_rec = arec;
       analog_recorder.open(analog_recorder_file);
+      analog_recorder << "# seed = " << seed << std::endl;
       analog_recorder << "# dt = " << sim_params.delta_t << std::endl;
       analog_recorder << "# step, neuron_ID, V_m (mV), ePSC (pA), iPSC (pA), I_ext (pA), ePSP (mV), iPSP (mV), V_ext (mV)" << std::endl;
     }
@@ -273,6 +277,11 @@ namespace stendhal
   // simulate
   void dGLPD::simulate(double t_sim)
   {
+    simulate(std::round(t_sim/delta_t));
+  }
+
+  void dGLPD::simulate(int n_sim)
+  {
     double V_spiked;
     unsigned int p;
     std::poisson_distribution<>::param_type pparam;
@@ -283,8 +292,8 @@ namespace stendhal
 
     // iterate for a period of t_sim; to do so, t must be added to t_sim
     // to account for simulation starting at time t
-    t_sim += t;
-    while (t<=t_sim) {
+    t_sim += nt;
+    while (nt<=n_sim) {
       // Apply input
       // iterate through layers
       for (int n=0; n<N_layers; n++) {
@@ -303,30 +312,29 @@ namespace stendhal
       }
     
       // evolve time
-      t += sim_params.delta_t;
+      t += sim_params.delta_t; // ms
+      nt++; // step
 
+      // check if record analog data
+      bool is_analog_rec = (analog_rec and ((nt % ticks_per_ms) == 0) )
       // evaluate
       for (std::vector<gl_psc_delta*>::iterator it=neurons.begin(); it!=neurons.end(); it++) {
-	int t_;
-
-	t_ = (int)std::round(t/sim_params.delta_t); // simulation time step
 	V_spiked = (*it)->evaluate();  // returns V_m when the neuron spiked; 0.0 otherwise
 	// store spike output to file when neuron spiked
-	if (V_spiked > 0)
-	  spike_recorder << (int)std::round(t/sim_params.delta_t) << ", " << (*it)->get_id() << ", " << V_spiked << '\n';
+	if (V_spiked != 0)
+	  spike_recorder << t << ", " << (*it)->get_id() << ", " << V_spiked << '\n';
 	// store analog data (membrane potentials and currents) to file
-	if (analog_rec) {
-	  if ( (sim_params.delta_t == 1.0) or (t_ % 10 == 0) ) {
-	    analog_recorder << (int)std::round(t/sim_params.delta_t) // time step
-			    << ", " << (*it)->get_id() // neuron ID
-			    << ", " << (*it)->get_Vm() // membrane potential
-			    << ", " << (*it)->get_ePSP() // excitatory post synaptic current (ePSP) (mV)
-			    << ", " << (*it)->get_iPSP() // inhibitory post synaptic current (iPSP) (mV)
-			    << ", " << (*it)->get_I_ext() // external current (pA)
-			    << ", " << (*it)->get_ePSP() // excitatory post synaptic potential (ePSP) (mV)
-			    << ", " << (*it)->get_iPSP() // inhibitory post synaptic potential (iPSP) (mV)
-			    << ", " << (*it)->get_V_ext() // external current induced potential change (mV)
-			    << std::endl;
+	if (is_analog_rec) {
+	  analog_recorder << t //
+			  << ", " << (*it)->get_id() // neuron ID
+			  << ", " << (*it)->get_Vm() // membrane potential
+			  << ", " << (*it)->get_ePSC() // excitatory post synaptic current (ePSC) (mV)
+			  << ", " << (*it)->get_iPSC() // inhibitory post synaptic current (iPSC) (mV)
+			  << ", " << (*it)->get_I_ext() // external current (pA)
+			  << ", " << (*it)->get_ePSP() // excitatory post synaptic potential (ePSP) (mV)
+			  << ", " << (*it)->get_iPSP() // inhibitory post synaptic potential (iPSP) (mV)
+			  << ", " << (*it)->get_V_ext() // external current induced potential change (mV)
+			  << std::endl;
 	  }
 	}
       }

@@ -1,0 +1,457 @@
+# Simulation of the Potjans and Diesmann (2014) graph using the Galves and Locherbach (2013) classical neuron model in discrete time.
+# By classical we describe the leak function (g_i(t)) as an exponentially decaying function. This is the only configuration where
+# the GL neuron model can be described by a single Markovian system. For more complex leak functions, such as the alpha- or beta-function,
+# a two state variable system is required to describe the model in a Markovian configuration.
+# For the random nubmer generation, the xoroshiro128+ pseudo random namber generator will be used.
+#
+#  filename: dPD_GL_psc_delta_xoroshiro.org
+#
+#  Director:
+#  Antonio Galves
+#
+#  Developers:
+#  Nilton L. Kamiji
+#  Jorge Stolfi
+#  Renan Shimoura
+#  Christophe Pouzat
+#
+#  Contributors:
+#  Aline Duarte
+#  Antonio Roque
+#  Karine Guimaraes
+#
+#  March 08, 2021
+
+
+# -*- ispell-local-dictionary: "american" -*-
+#+OPTIONS: ':nil *:t -:t ::t <:t H:4 \n:nil ^:nil arch:headline
+#+OPTIONS: author:t broken-links:nil c:nil creator:nil
+#+OPTIONS: d:(not "LOGBOOK") date:t e:t email:nil f:t inline:t num:t
+#+OPTIONS: p:nil pri:nil prop:nil stat:t tags:nil tasks:t tex:t
+#+OPTIONS: timestamp:t title:t toc:t todo:t |:t
+#+TITLE: Implementaion of the Potjans Diesmann microcircuit model using the classical Galves-L@@latex:\"{o}@@cherbach neuron model
+#+AUTHOR: Nilton Liuji Kamiji, Christophe Pouzat, Aline Duarte, Antonio Roque, @@latex:\\@@Antonio Galves
+#+EMAIL: nilton.kamiji@usp.br
+#+LANGUAGE: en
+#+SELECT_TAGS: export
+#+EXCLUDE_TAGS: noexport
+#+CREATOR: Emacs 27.2 (Org mode 9.4.4)
+#+STARTUP: indent
+#+LaTeX_CLASS: koma-article
+#+LaTeX_CLASS_OPTIONS: [11pt]
+#+LaTeX_HEADER: \renewenvironment{verbatim}{\begin{alltt} \scriptsize \color{Bittersweet} \vspace{0.2cm} }{\vspace{0.2cm} \end{alltt} v\normalsize \color{black}}
+#+LaTeX_HEADER: \definecolor{lightcolor}{gray}{.55}
+#+LaTeX_HEADER: \definecolor{shadecolor}{gray}{.95}
+#+PROPERTY: header-args :eval no-export
+#+PROPERTY: header-args:python :results pp
+
+#+NAME: org-latex-set-up
+#+BEGIN_SRC emacs-lisp :results silent :exports none
+  (require 'cl-lib)
+  ;; load ox-latex
+  (require 'ox-latex)
+  ;; if "koma-article" is already defined, remove it
+  (delete (cl-find "koma-article" org-latex-classes :key 'car :test 'equal) org-latex-classes)
+  ;; add "koma-article" to list org-latex-classes
+  (add-to-list 'org-latex-classes
+	       '("koma-article"
+		  "\\documentclass[koma,11pt]{scrartcl}
+		   \\usepackage[utf8]{inputenc}
+		   \\usepackage{cmbright}
+		   \\usepackage[usenames,dvipsnames]{xcolor}
+		   \\usepackage{graphicx,longtable,url,rotating}
+		   \\usepackage{amsmath}
+		   \\usepackage{amsfonts}
+		   \\usepackage{amssymb}
+		   \\usepackage{subfig}
+		   \\usepackage{minted}
+		   \\usepackage{algpseudocode}
+		   \\usepackage[round]{natbib}
+		   \\usepackage{alltt}
+		   [NO-DEFAULT-PACKAGES]
+		   [EXTRA]
+		   \\usepackage{hyperref}
+		   \\hypersetup{colorlinks=true,pagebackref=true,urlcolor=orange}"
+		   ("\\section{%s}" . "\\section*{%s}")
+		   ("\\subsection{%s}" . "\\subsection*{%s}")
+		   ("\\subsubsection{%s}" . "\\subsubsection*{%s}")
+		   ("\\paragraph{%s}" . "\\paragraph*{%s}")
+		   ("\\subparagraph{%s}" . "\\subparagraph*{%s}")))
+  (setq org-latex-listings 'minted)
+  (setq org-latex-minted-options
+	'(("bgcolor" "shadecolor")
+	  ("fontsize" "\\scriptsize")))
+  (setq org-latex-toc-command "\\tableofcontents\n\\pagebreak\n\\listoffigures\n\\pagebreak\n\n")
+  (setq org-latex-pdf-process
+	'("pdflatex -shell-escape -interaction nonstopmode -output-directory %o %f"
+	  "biber %b" 
+	  "pdflatex -shell-escape -interaction nonstopmode -output-directory %o %f" 
+	  "pdflatex -shell-escape -interaction nonstopmode -output-directory %o %f"))
+#+END_SRC
+
+#+NAME: stderr-redirection
+#+BEGIN_SRC emacs-lisp :exports none :results silent
+;; Redirect stderr output to stdout so that it gets printed correctly (found on
+;; http://kitchingroup.cheme.cmu.edu/blog/2015/01/04/Redirecting-stderr-in-org-mode-shell-blocks/
+(setq org-babel-default-header-args:sh
+      '((:prologue . "exec 2>&1") (:epilogue . ":"))
+      )
+(setq org-babel-use-quick-and-dirty-noweb-expansion t)
+#+END_SRC
+
+* Introduction :export:
+
+Implementation of the Potjans and Diesmann \cite{PotjansDiesmann2014} microcircuit model using the classical Galves-L@@latex:\"{o}@@cherbach neuron model \cite{GalvesLocherbach2013} in discrete time.
+
+* Model definition                                                   :export:
+
+** The original PD model :export:
+<<sec:PD>>
+
+The PD model (Potjans and Diesmann, 2014) consists of 8 neuronal populations, representing excitatory and inhibitory populations of 4 cortical layers, namely, layers 2/3 (L23e/i), 4 (L4e/i), 5 (L5e/i) and 6 (L6e/i), where e denotes excitatory and i inhibitory. The number of neurons of each population is shown in table \ref{table:PD_num_neurons}, which totalizes 77169 neurons.
+\begin{table}[htbp]
+    \centering
+    \caption{Number of neurons per cortical layer}
+    \label{table:PD_num_neurons}
+    \begin{tabular}{llllllll}
+         \multicolumn{1}{c}{L23e} & \multicolumn{1}{c}{L23i} & \multicolumn{1}{c}{L4e} & \multicolumn{1}{c}{L4i} & \multicolumn{1}{c}{L5e} & \multicolumn{1}{c}{L5i} & \multicolumn{1}{c}{L6e} & \multicolumn{1}{c}{L6i} \\
+         20683 & 5834 & 21915 & 5479 & 4850 & 1065 & 14395 & 2948 
+    \end{tabular}
+\end{table}
+
+*** Membrane potential dynamics
+<<sec:PD_membrane>>
+
+All neurons are described with the same LIF (leaky integrate-and-fire) dynamics (eq. (\ref{eq:LIF}))
+\begin{equation}
+  \begin{aligned}
+    \frac{dV_m(t)}{dt} &= \begin{cases} 0 & \text{if neuron is refractory} \\
+    -\frac{V_m(t)}{\tau_m} + \frac{S_{syn}^i(t)}{C_m} & \text{otherwise}
+    \end{cases} \\
+    \frac{dI_{syn}(t)}{dt} &= \begin{cases} 0 & \text{if neuron is refractory} \\
+    -\frac{I_{syn}(t)}{\tau_{syn}} + \sum_j{W_j} & \text{otherwise}
+    \end{cases} \\
+    \text{if } V_m^i(t) \geq V_{th} &\quad \text{neuron spiked and refractory}
+  \end{aligned}
+  \label{eq:LIF}
+\end{equation}
+where $V_m(t)$ is the membrane potential, $\tau_m = 10$ ms is the membrane time constant representing the leakage effect, $C_m = 250$ pF the membrane capacitance, $V_{th} = 15$ mV the threshold potential in which a neuron fires when its membrane potential exceeds this value, $I_{syn}(t)$ the membrane current elicited by synaptic inputs from pre-synaptic neurons  $j$ ($W_j$), and $\tau_{syn} = 0.5$ ms the synaptic time constant indicating the dynamics of synaptic receptor channel. The refractory period ($\tau_{ref}$), the period in which a neuron stays silent after emmiting a spike, was 2 ms.
+
+
+*** The graph of interaction
+<<sec:PD_graph>>
+
+Neurons are connected following the connection probability between neuronal populations shown in table \ref{table:PD_conectivity}.
+The resulting graph of interaction is a directed graph with nearly 300 million edges.
+
+\begin{table}[htbp]
+    \centering
+    \caption{\label{table:PD_conectivity} Connection probability between neuronal populations
+    }
+    \begin{tabular}{lccccccccc}
+         &  & \multicolumn{8}{c}{from} \tabularnewline
+         &  & L23e & L23i & L4e & L4i & L5e & L5i & L6e & L6i \tabularnewline
+         & L23e & 0.101 & 0.169 & 0.044 & 0.082 & 0.032 & 0.0 & 0.008 & 0.0 \tabularnewline
+         & L23i & 0.135 & 0.137 & 0.032 & 0.052 & 0.075 & 0.0 & 0.004 & 0.0 \tabularnewline
+         & L4e & 0.008 & 0.006 & 0.050 & 0.135 & 0.007 & 0.0003 & 0.045 & 0.0 \tabularnewline
+         to & L4i & 0.069 & 0.003 & 0.079 & 0.160 & 0.003 & 0.0 & 0.106 & 0.0 \tabularnewline
+         & L5e & 0.100 & 0.062 & 0.051 & 0.006 & 0.083 & 0.373 & 0.020 & 0.0 \tabularnewline
+         & L5i & 0.055 & 0.027 & 0.026 & 0.002 & 0.060 & 0.316 & 0.009 & 0.0 \tabularnewline
+         & L6e & 0.016 & 0.007 & 0.021 & 0.017 & 0.057 & 0.020 & 0.040 & 0.225 \tabularnewline
+         & L6i & 0.036 & 0.001 & 0.003 & 0.001 & 0.028 & 0.008 & 0.066 & 0.144 
+         \tabularnewline
+    \end{tabular}
+\end{table}
+
+Moreover, synaptic connections between neurons $j$ and $i$ are described by the synaptic weights ($w_{j \to i}$) and transmission delay ($d_{j \to i}$), drawn from a clipped normal distribution, and are different for excitatory and inhibitory synapses as shown in table \ref{table:PD_synaptic_weight_delay}. $dt$ is the simulation time step, indicating that synapse transmission requires at least one time step.
+
+\begin{table}[htb!]
+    \centering
+    \caption{Synaptic weight and delay. Synaptic weights are clipped at 0, and synaptic delays are clipped at simulation step ($d_t = 0.1$ ms)}
+    \label{table:PD_synaptic_weight_delay}
+    \begin{tabular}{lcl}
+        %  \multicolumn{2}{c}{excitatory} \\
+         &
+         $w_e$ & $\mathcal{N}$($\mu = 87.8, \sigma = 8.8$) pA; $w_e > 0$ \\
+         excitatory & $d_e$ & $\mathcal{N}$($\mu=1.5 , \sigma = 0.75$) ms; $d_e \geq dt$ \\
+        %  \multicolumn{2}{c}{inhibitory}  \\
+         &
+         $w_i$ & $\mathcal{N}$($\mu = -351.2, \sigma = 35.1$) pA; $w_i < 0$ \\
+         inhibitory & $d_i$ & $\mathcal{N}$($\mu=0.8 , \sigma = 0.4$) ms; $d_i \geq dt$
+    \end{tabular}
+\end{table}
+
+\textbf{Remark 1} A synaptic weight of $87.8$ pA will elicit a maximum membrane potential change of approximately $0.15$ mV.
+
+\textbf{Remark 2} The number of synapses ($K$) between any two populations are calculated from:
+\begin{equation}
+    K = \frac{\log(1 - C_a)}{\log(1-1/(N_{pre}N_{post}))},
+    \label{eq:PD_K}
+\end{equation}
+where $C_a$ is the connection probability taken from table \ref{table:PD_conectivity}, $N_{pre}$ and $N_{post}$ the number of neurons in the pre- and post-synaptic population, respectively, taken from table \ref{table:PD_num_neurons}. The $K$ pairs are then randomly chosen, so that multiple synapses with different parameter values for any pair can occur. This phenomenon is know as multapses.
+
+\textbf{Remark 3} The connection weight between neurons of L4e to L23e is doubled, that is, taken from a clipped normal distribution of $\mathcal{N}$($\mu = 175.6, \sigma = 17.6$) pA
+
+*** Background input
+<<sec:PD_background>>
+
+The network is driven by a constant external input that can be described as Poissonian spike trains ($rate = 8$ Hz) or constant current. The number of external inputs is layer dependent as shown in table \ref{table:PD_ext_num_neurons}.
+
+\begin{table}[htbp]
+    \centering
+    \caption{Number of external inputs onto each cortical layer}
+    \label{table:PD_ext_num_neurons}
+    \begin{tabular}{llllllll}
+         \multicolumn{1}{c}{L23e} & \multicolumn{1}{c}{L23i} & \multicolumn{1}{c}{L4e} & \multicolumn{1}{c}{L4i} & \multicolumn{1}{c}{L5e} & \multicolumn{1}{c}{L5i} & \multicolumn{1}{c}{L6e} & \multicolumn{1}{c}{L6i} \\
+         1600 & 1500 & 2100 & 1900 & 2000 & 1900 & 2900 & 2100 
+    \end{tabular}
+\end{table}
+
+\textbf{Remark 1} In the case of Poissonian spike trains input, every neuron on each layer receives independent Poissonian spike trains with $rate = 8 \times n$, where $n$ is the number of external inputs, which is the same as generating $n$ Poissonian spike trains of $8$ Hz and applying all of it to the neuron. Note that all input has fixed weight and delay values of $87.8$ pA and $1.5$ ms, respectively.
+
+** The GL model :export:
+<<sec:GL>>
+
+*** Membrane Potential Process
+
+The the dynamics (/membrane potential process/ - *MPP*) of the neuron is described as:
+\begin{equation}
+V_t(i) = \sum_j{ W_{j\rightarrow i}\sum_{s=L_t^i}^{t-1}{ \exp\left({-\frac{t-s-1}{\tau_i}}\right)X_{s-d_{j\rightarrow i}+1}(j) } },
+\label{eq:MPP_1}
+\end{equation}
+where:
+- $j$ :: The /presynaptic neuron/.
+- $i$ :: The /postsynaptic neuron/.
+- $W_{j\rightarrow i} \in \mathbb{R}$ :: The /synaptic weight/, if $w_{j\rightarrow i} < 0$ the synapse is /inhibitory/, if $w_{j\rightarrow i} >0$ it is /exitatory/.
+- $d_{j\rightarrow i} \in \mathbb{R}^+$ :: The /synaptic delay/, this accounts for the /propagation time/ of the spike from the soma of neuron $j$ to the the synaptic terminal on neuron $i$, as well as the time for the presynaptic vesicles to fuse upon spike arrival, the transmitter to diffuse and bind to the postsynaptic receptors and the latter to open.
+- $L_t^i$ :: The /last spike time/ of neuron $i$ prior to time $t$.
+- $\tau_i$ :: The decay time constat of the leakage effect of the neuron.
+- $X_t(i)$ :: The /spike train/ of neuron $i$ taking value in {0,1}, if $X_t(i)=1$ means neuron $i$ fired at time $t$.
+
+Note that eq. (\ref{eq:MPP_1}) can be described as a Markovian system as:
+\begin{equation}
+\begin{aligned}
+V_{t+1}(i) =&\; e^{-1/\tau_i} V_t(i) + \sum_j{ W_{j \to i} X_{s-d_{j \to i}+1}(j) } \\
+X_{t+1}(i) =& 
+\begin{cases}
+1 & \; \text{if neuron spiked; set } $V_{t+1}(i) = 0$. \\
+0 & \; \text{otherwise}
+\end{cases}
+\end{aligned}
+\label{eq:MPP_exp_final}
+\end{equation}
+
+*** The firing probability function $\Phi(V_t(i))$
+
+The firing probability function ($\Phi(V_t(i))$) was determined so that the firing rate of the neuron to constant current input (FI-curve) reproduces that of the LIF neuron of the original PD model.
+
+We consider the following function for $\Phi(V)$
+
+\begin{equation}
+\Phi(V) = \begin{cases}
+0 & \text{if $V \leq V_{rheo}$}\\
+[\gamma(V-V_{rheo})]^r & \text{if $V_{rheo} < V < V_{sat}$} \\
+1 & \text{if $V \geq V_{sat} = V_{rheo} + 1/\gamma$}
+\end{cases}
+\label{eq:phi_full}
+\end{equation}
+
+
+Fig. \ref{fig:FI_curve} represents the FI-curve of the original LIF neuron (red) and that of the GL model (blue). The FI-curve for the GL neuron was obtained with $\gamma=0.1 \text{ mV}^{-1}$ (i.e. there is a window of 10 mV for $0 < \Phi(V) < 1$), $r=0.4$ and $V_{rheo}=15$ mV (\color{red}-50 mV in Fig. \ref{fig:GL_Phi}; will be corrected in future version\color{black}), which is represented in Fig. \ref{fig:GL_Phi}.
+
+\begin{multicols}{2}
+  \begin{center}
+    \includegraphics[width=0.4\linewidth]{figures/FI_curve}
+    \captionsetup{width=0.4\linewidth}
+    \captionof{figure}{FI curve of LIF (red) and GL (blue) neuron model.}
+    \label{fig:FI_curve}
+  \end{center}
+  \begin{center}
+    \includegraphics[width=0.4\linewidth]{figures/GL_Phi}
+    \captionsetup{width=0.4\linewidth}
+    \captionof{figure}{Firing rate ($\Phi(V)$) of the GL model.}
+    \label{fig:GL_Phi}
+  \end{center}
+\end{multicols}
+
+
+In practice a sequence of Bernoulli random variable is used at each time step: $\{U_t(i)\}_{i \in I}$, $U_t(i) \stackrel{IID}{\sim} \mathcal{B}$ and the $X_{t+1}(i)$ are given by:
+\begin{equation}\label{eq:X-evolution}
+X_{t+1}(i) = \begin{cases}1 & \text{if } U_t(i) \le \phi_i\left(V_t(i)\right) \\ 0 & \text{otherwise}   \end{cases}
+\end{equation}
+
+* =C++= implementation                                               :export:
+TODO: write about the code
+
+** Compile
+
+#+BEGIN_SRC sh :export code
+mkdir bin
+cd bin
+cmake ../src
+make
+#+END_SRC
+
+** Execution time
+
+*** Simulation time step of 1.0 ms
+
+#+BEGIN_SRC sh :export code
+time ./dGLPD_delta 11111 1000 1.0
+#+END_SRC
+
+#+BEGIN_SRC text
+Random Number Generator Engine: xoroshiro128+
+seed: 11111, Simulation time: 1000 ms, Simulation time step: 1 ms
+prepare: 372.762 s
+simulate(1000): 155.432 s
+
+real    8m49.235s
+user    8m26.601s
+sys     0m21.554s
+#+END_SRC
+
+#+CAPTION: Raster plot of the GL-PD model with simulation step of 1 ms.
+#+LABEL: fig:raster_dGLPD_delta_1ms
+#+ATTR_LATEX: :width 0.45\linewidth
+[[file:./figures/raster_1.png]]
+
+#+CAPTION: box plot of layer specific firing rate ($dt=1$ ms).
+#+LABEL: fig:frate_dGLPD_delta_1ms
+#+ATTR_LATEX: :width 0.45\linewidth
+[[file:./figures/box_plot_1.png]]
+
+
+*** Simulation time step of 0.1 ms
+
+#+BEGIN_SRC sh :export code
+time ./dGLPD_delta 11111 1000 0.1
+#+END_SRC
+
+#+BEGIN_SRC text
+Random Number Generator Engine: xoroshiro128+
+seed: 11111, Simulation time: 1000 ms, Simulation time step: 0.1 ms
+prepare: 362.266 s
+simulate(1000): 269.677 s
+
+real    10m32.913s
+user    10m11.589s
+sys     0m20.644s
+#+END_SRC
+
+
+#+CAPTION: Raster plot of the GL-PD model with simulation step of 0.1 ms.
+#+LABEL: fig:raster_dGLPD_delta_1ms
+#+ATTR_LATEX: :width 0.45\linewidth
+[[file:./figures/raster_01.png]]
+
+#+CAPTION: box plot of layer specific firing rate ($dt=0.1$ ms).
+#+LABEL: fig:frate_dGLPD_delta_1ms
+#+ATTR_LATEX: :width 0.45\linewidth
+[[file:./figures/box_plot_01.png]]
+
+
+** Memory usage
+
+For measuring memory usage, the code was compiled without optimization (-O0), and profiled with valgrind
+
+*** Simulation time step of 1.0 ms
+
+#+BEGIN_SRC sh :export code
+  cmake -DCMAKE_CXX_FLAGS=-g -Dwith-optimize=-O0 ../src
+  make
+  valgrind --tool=massif ./dGLPD_delta 1111 1000 1.0
+  ms_print ./massif.out.18029
+#+END_SRC
+
+#+BEGIN_SRC text
+  --------------------------------------------------------------------------------
+  Command:            ./dGLPD_delta 12345 1000 1.0
+  Massif arguments:   (none)
+  ms_print arguments: ./massif.out.18029
+  --------------------------------------------------------------------------------
+
+
+      GB
+  13.67^                                                                       :
+       |                                                        @:@@###########:
+       |                                                        @ @@#          :
+       |                                                    @@::@ @@#          :
+       |                                                 :@@@@ :@ @@#          :
+       |                                            ::::::@@@@ :@ @@#          :
+       |                                         ::::  :::@@@@ :@ @@#          :
+       |                                  :::::::: ::  :::@@@@ :@ @@#          :
+       |                                 @:    ::: ::  :::@@@@ :@ @@#          :
+       |                             @@@@@:    ::: ::  :::@@@@ :@ @@#          :
+       |                          :@:@@  @:    ::: ::  :::@@@@ :@ @@#          :
+       |                       ::::@ @@  @:    ::: ::  :::@@@@ :@ @@#          :
+       |                   ::::: ::@ @@  @:    ::: ::  :::@@@@ :@ @@#          :
+       |                @:@::: : ::@ @@  @:    ::: ::  :::@@@@ :@ @@#          :
+       |                @:@::: : ::@ @@  @:    ::: ::  :::@@@@ :@ @@#          :
+       |                @:@::: : ::@ @@  @:    ::: ::  :::@@@@ :@ @@#          :
+       |                @:@::: : ::@ @@  @:    ::: ::  :::@@@@ :@ @@#          :
+       |         :::::::@:@::: : ::@ @@  @:    ::: ::  :::@@@@ :@ @@#          :
+       |        @:     :@:@::: : ::@ @@  @:    ::: ::  :::@@@@ :@ @@#          :
+       |  :@@:::@:     :@:@::: : ::@ @@  @:    ::: ::  :::@@@@ :@ @@#          :
+     0 +----------------------------------------------------------------------->Ti
+       0                                                                   2.649
+
+#+END_SRC
+
+*** Simulation time step of 0.1 ms
+
+#+BEGIN_SRC sh :export code
+  cmake -DCMAKE_CXX_FLAGS=-g -Dwith-optimize=-O0 ../src
+  make
+  valgrind --tool=massif ./dGLPD_delta 12345 1000 0.1
+  ms_print ./massif.out.30417
+#+END_SRC
+
+#+BEGIN_SRC text
+  --------------------------------------------------------------------------------
+  Command:            ./dGLPD_delta 12345 1000 0.1
+  Massif arguments:   (none)
+  ms_print arguments: ./massif.out.30417
+  --------------------------------------------------------------------------------
+
+
+      GB
+  13.73^                                                                       :
+       |                               :@@#####################################:
+       |                               @@@#                                    :
+       |                             ::@@@#                                    :
+       |                           :@::@@@#                                    :
+       |                        ::::@::@@@#                                    :
+       |                       :: ::@::@@@#                                    :
+       |                   :::::: ::@::@@@#                                    :
+       |                   @  ::: ::@::@@@#                                    :
+       |                :::@  ::: ::@::@@@#                                    :
+       |               :: :@  ::: ::@::@@@#                                    :
+       |             :::: :@  ::: ::@::@@@#                                    :
+       |            ::::: :@  ::: ::@::@@@#                                    :
+       |          @:::::: :@  ::: ::@::@@@#                                    :
+       |          @:::::: :@  ::: ::@::@@@#                                    :
+       |         @@:::::: :@  ::: ::@::@@@#                                    :
+       |         @@:::::: :@  ::: ::@::@@@#                                    :
+       |    @::::@@:::::: :@  ::: ::@::@@@#                                    :
+       |    @:  :@@:::::: :@  ::: ::@::@@@#                                    :
+       | :::@:  :@@:::::: :@  ::: ::@::@@@#                                    :
+     0 +----------------------------------------------------------------------->Ti
+       0                                                                   4.535
+#+END_SRC
+
+** Storage of $V_m$ every 1.0 ms
+
+By changing the last argument in line 81 of =./src/main_dGLPD_delta.cpp= one can store analog data such as $V_t(i)$ of every neuron at every 1.0 ms interval. In such case, the simulation time for $dt=0.1$ and $dt=1.0$ are both about 15 min. This is expected asas writing data to file is a time-consuming process.
+
+** TODO
+Make other analysis:
+- firing rates
+- synchrony
+- cross-correlogram
+- CV
+- effect of considering the delay by PD and a fixed delay of 1 time step for simulations with 1ms time step.
+  
+* References
+#+LaTeX: \printbibliography
+

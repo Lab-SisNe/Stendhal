@@ -16,7 +16,7 @@ $ make
 
 # How to execute
 
-$ stendhal_PD seed sim_time <conn_matrix>
+$ dPDGL_delta seed sim_time_ms dt_ms <conn_matrix>
 
 conn_matrix is a csv file containing
 

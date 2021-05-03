@@ -126,6 +126,8 @@ namespace stendhal
     {
       // simulation time step (ms)
       double delta_t {0.1};
+      //ticks per ms
+      int ticks_per_ms {10};
       // simulation time (ms)
       double t_sim {1000.0};
       // random number generator seed
@@ -217,6 +219,8 @@ namespace stendhal
 
     // simulation time
     static double t;
+    // simulation time step
+    static int nt;
 
     // output file
     std::ofstream spike_recorder;  // record spike events
@@ -243,6 +247,7 @@ namespace stendhal
     void prepare(void);
     // Simulate
     void simulate(double);
+    void simulate(int);
 
     // temporary
     double get_conn_prob(int i, int j);
