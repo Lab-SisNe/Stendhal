@@ -44,49 +44,49 @@
 #+LaTeX_HEADER: \definecolor{shadecolor}{gray}{.95}
 #+PROPERTY: header-args :eval no-export
 #+PROPERTY: header-args:python :results pp
+#+LaTeX_HEADER: \usepackage{minted}
+#+LATEX_HEADER: \usepackage{multicol}
 
 #+NAME: org-latex-set-up
 #+BEGIN_SRC emacs-lisp :results silent :exports none
-  (require 'cl-lib)
-  ;; load ox-latex
-  (require 'ox-latex)
-  ;; if "koma-article" is already defined, remove it
-  (delete (cl-find "koma-article" org-latex-classes :key 'car :test 'equal) org-latex-classes)
-  ;; add "koma-article" to list org-latex-classes
-  (add-to-list 'org-latex-classes
-	       '("koma-article"
-		  "\\documentclass[koma,11pt]{scrartcl}
-		   \\usepackage[utf8]{inputenc}
-		   \\usepackage{cmbright}
-		   \\usepackage[usenames,dvipsnames]{xcolor}
-		   \\usepackage{graphicx,longtable,url,rotating}
-		   \\usepackage{amsmath}
-		   \\usepackage{amsfonts}
-		   \\usepackage{amssymb}
-		   \\usepackage{subfig}
-		   \\usepackage{minted}
-		   \\usepackage{algpseudocode}
-		   \\usepackage[round]{natbib}
-		   \\usepackage{alltt}
-		   [NO-DEFAULT-PACKAGES]
-		   [EXTRA]
-		   \\usepackage{hyperref}
-		   \\hypersetup{colorlinks=true,pagebackref=true,urlcolor=orange}"
-		   ("\\section{%s}" . "\\section*{%s}")
-		   ("\\subsection{%s}" . "\\subsection*{%s}")
-		   ("\\subsubsection{%s}" . "\\subsubsection*{%s}")
-		   ("\\paragraph{%s}" . "\\paragraph*{%s}")
-		   ("\\subparagraph{%s}" . "\\subparagraph*{%s}")))
-  (setq org-latex-listings 'minted)
-  (setq org-latex-minted-options
-	'(("bgcolor" "shadecolor")
-	  ("fontsize" "\\scriptsize")))
-  (setq org-latex-toc-command "\\tableofcontents\n\\pagebreak\n\\listoffigures\n\\pagebreak\n\n")
-  (setq org-latex-pdf-process
-	'("pdflatex -shell-escape -interaction nonstopmode -output-directory %o %f"
-	  "biber %b" 
-	  "pdflatex -shell-escape -interaction nonstopmode -output-directory %o %f" 
-	  "pdflatex -shell-escape -interaction nonstopmode -output-directory %o %f"))
+  (with-eval-after-load 'ox-latex
+    ;; if "koma-article" is already defined, remove it
+    (delete (cl-find "koma-article" org-latex-classes :key 'car :test 'equal) org-latex-classes)
+    ;; add "koma-article" to list org-latex-classes
+    (add-to-list 'org-latex-classes
+                 '("koma-article"
+                    "\\documentclass[koma,11pt]{scrartcl}
+                     \\usepackage[utf8]{inputenc}
+                     \\usepackage{cmbright}
+                     \\usepackage[usenames,dvipsnames]{xcolor}
+                     \\usepackage{graphicx,longtable,url,rotating}
+                     \\usepackage{amsmath}
+                     \\usepackage{amsfonts}
+                     \\usepackage{amssymb}
+                     \\usepackage{subfig}
+                     \\usepackage{minted}
+                     \\usepackage{algpseudocode}
+                     \\usepackage[round]{natbib}
+                     \\usepackage{alltt}
+                     [NO-DEFAULT-PACKAGES]
+                     [EXTRA]
+                     \\usepackage{hyperref}
+                     \\hypersetup{colorlinks=true,pagebackref=true,urlcolor=orange}"
+                     ("\\section{%s}" . "\\section*{%s}")
+                     ("\\subsection{%s}" . "\\subsection*{%s}")
+                     ("\\subsubsection{%s}" . "\\subsubsection*{%s}")
+                     ("\\paragraph{%s}" . "\\paragraph*{%s}")
+                     ("\\subparagraph{%s}" . "\\subparagraph*{%s}")))
+    (setq org-latex-listings 'minted)
+    (setq org-latex-minted-options
+          '(("bgcolor" "shadecolor")
+            ("fontsize" "\\scriptsize")))
+    (setq org-latex-toc-command "\\tableofcontents\n\\pagebreak\n\\listoffigures\n\\pagebreak\n\n")
+    (setq org-latex-pdf-process
+          '("pdflatex -shell-escape -interaction nonstopmode -output-directory %o %f"
+            "biber %b" 
+            "pdflatex -shell-escape -interaction nonstopmode -output-directory %o %f" 
+            "pdflatex -shell-escape -interaction nonstopmode -output-directory %o %f")))
 #+END_SRC
 
 #+NAME: stderr-redirection
@@ -261,14 +261,14 @@ Fig. \ref{fig:FI_curve} represents the FI-curve of the original LIF neuron (red)
 
 \begin{multicols}{2}
   \begin{center}
-    \includegraphics[width=0.4\linewidth]{figures/FI_curve}
-    \captionsetup{width=0.4\linewidth}
+    \includegraphics[width=\linewidth]{figures/FI_curve}
+    \captionsetup{width=\linewidth}
     \captionof{figure}{FI curve of LIF (red) and GL (blue) neuron model.}
     \label{fig:FI_curve}
   \end{center}
   \begin{center}
-    \includegraphics[width=0.4\linewidth]{figures/GL_Phi}
-    \captionsetup{width=0.4\linewidth}
+    \includegraphics[width=\linewidth]{figures/GL_Phi}
+    \captionsetup{width=\linewidth}
     \captionof{figure}{Firing rate ($\Phi(V)$) of the GL model.}
     \label{fig:GL_Phi}
   \end{center}
@@ -286,13 +286,16 @@ TODO: write about the code
 ** Compile
 
 #+BEGIN_SRC sh :export code
-mkdir bin
-cd bin
-cmake ../src
-make
+  unzip dGLPD_delta.zip
+  mkdir bin
+  cd bin
+  cmake ../src
+  make
 #+END_SRC
 
 ** Execution time
+
+Execution time was measured using time command. I have also measured simulation time of the original NEST implementation, however, only NEST 2.16.0, which was released on 2018-08-21, allowed to execute using a single process. All other NEST versions has restriction on the number of connections per virtual-process, requiring at least 3 virtual processes to simulate the PD model in full scale. When using a single process, our code was much faster than NEST 2.16.0. On the other hand, NEST 2.20.1 had a great improvement when using 4 virtual processes (OpenMP) when compared to NEST 2.16.0. However, if we compare user time, our code is comparable to that of NEST 2.20.1, suggesting that if similar approach is used to paralelize the code, we may obtain even better performance.
 
 *** Simulation time step of 1.0 ms
 
@@ -311,15 +314,9 @@ user    8m26.601s
 sys     0m21.554s
 #+END_SRC
 
-#+CAPTION: Raster plot of the GL-PD model with simulation step of 1 ms.
-#+LABEL: fig:raster_dGLPD_delta_1ms
-#+ATTR_LATEX: :width 0.45\linewidth
-[[file:./figures/raster_1.png]]
-
-#+CAPTION: box plot of layer specific firing rate ($dt=1$ ms).
-#+LABEL: fig:frate_dGLPD_delta_1ms
-#+ATTR_LATEX: :width 0.45\linewidth
-[[file:./figures/box_plot_1.png]]
+#+CAPTION: Measures obtained from 1 sec of simulation ($dt=1$ ms). The first 100 ms was discarded due to its transient bvehavihour. Dark colors indicate excitatory population, and light colors indicate inhibitory population. *Left:* raster plot of the last 400 ms. *Top right:* mean firing rate per cortical layer. *Center right:* Irregularity measured as the coefficient of variation (CV) of the interspike interval (ISI). *Bottom right:* The synchrony index is computed as the variance of the spike count histogram divided by its mean.
+#+LABEL: fig:measure_d1_t1
+[[file:./figures/dGLPD_delta_d1_1s.pdf]]
 
 
 *** Simulation time step of 0.1 ms
@@ -339,21 +336,86 @@ user    10m11.589s
 sys     0m20.644s
 #+END_SRC
 
+#+CAPTION: Measures obtained from 1 sec of simulation ($dt=0.1$ ms). The first 100 ms was discarded due to its transient bvehavihour. Dark colors indicate excitatory population, and light colors indicate inhibitory population. *Left:* raster plot of the last 400 ms. *Top right:* mean firing rate per cortical layer. *Center right:* Irregularity measured as the coefficient of variation (CV) of the interspike interval (ISI). *Bottom right:* The synchrony index is computed as the variance of the spike count histogram divided by its mean.
+#+LABEL: fig:measure_d01_t1
+[[file:./figures/dGLPD_delta_d01_1s.pdf]]
 
-#+CAPTION: Raster plot of the GL-PD model with simulation step of 0.1 ms.
-#+LABEL: fig:raster_dGLPD_delta_1ms
-#+ATTR_LATEX: :width 0.45\linewidth
-[[file:./figures/raster_01.png]]
 
-#+CAPTION: box plot of layer specific firing rate ($dt=0.1$ ms).
-#+LABEL: fig:frate_dGLPD_delta_1ms
-#+ATTR_LATEX: :width 0.45\linewidth
-[[file:./figures/box_plot_01.png]]
+*** NEST 2.16, simulation time step 0.1 ms
 
+#+BEGIN_SRC sh :export code
+  module load py36-nest/2.16.0
+  time python3 example.py
+#+END_SRC
+
+#+BEGIN_SRC text
+  Spike detectors created
+  Thalamic input not provided
+  Poisson background input created
+  Recurrent connections are established
+  Poisson background input is connected
+  Spike detector connected
+  Time to create the connections: 224.70 s
+
+  May 04 09:26:07 NodeManager::prepare_nodes [Info]: 
+      Preparing 77185 nodes for simulation.
+
+  May 04 09:27:13 SimulationManager::start_updating_ [Info]: 
+      Number of local nodes: 77185
+      Simulation time (ms): 1000
+      Number of OpenMP threads: 1
+      Number of MPI processes: 1
+
+  100 %: network time: 1000.0 ms, realtime factor: 0.0002 
+
+  May 04 11:13:29 SimulationManager::resume [Info]: 
+      Simulation finished.
+  Time to simulate: 6442.45 s
+
+  real	111m18.500s
+  user	107m4.390s
+  sys	3m33.969s
+#+END_SRC
+
+*** NEST 2.20.1, simulation time step 0.1 ms
+
+#+BEGIN_SRC sh :export code
+  module load py36-nest/2.20.1
+  time python3 example.py
+#+END_SRC
+
+#+BEGIN_SRC text
+  Spike detectors created
+  Thalamic input not provided
+  Poisson background input created
+  Recurrent connections are established
+  Poisson background input is connected
+  Spike detector connected
+  Time to create the connections: 58.93 s
+
+  May 04 09:14:18 NodeManager::prepare_nodes [Info]: 
+      Preparing 77233 nodes for simulation.
+
+  May 04 09:14:43 SimulationManager::start_updating_ [Info]: 
+      Number of local nodes: 77233
+      Simulation time (ms): 1000
+      Number of OpenMP threads: 4
+      Number of MPI processes: 1
+
+  100 %: network time: 1000.0 ms, realtime factor: 0.0109
+
+  May 04 09:16:17 SimulationManager::run [Info]: 
+      Simulation finished.
+  Time to simulate: 119.92 s
+
+  real	3m2.829s
+  user	10m21.236s
+  sys	0m32.026s
+#+END_SRC
 
 ** Memory usage
 
-For measuring memory usage, the code was compiled without optimization (-O0), and profiled with valgrind
+For measuring memory usage, the code was compiled without optimization (-O0) with debug code (-g), and profiled with valgrind.
 
 *** Simulation time step of 1.0 ms
 
@@ -440,18 +502,78 @@ For measuring memory usage, the code was compiled without optimization (-O0), an
        0                                                                   4.535
 #+END_SRC
 
+** Comparison with the original (NEST) implementation
+
+The measures shown in figs. [[fig:measure_d1_t1]] and [[fig:measure_d01_t1]] was obtained from 1s of simulation data. On the other hand, the measures on Fig. 6 of the original work \cite{PotjansDiesmann2014} (fig. \ref{fig:measure_NEST_org}) is based on simulation data of 60 s. For a direct comparison, 60 s. was simulated for both conditions ($dt=1$ and $0.1$ ms). Fig. \ref{fig:measure_NEST} shows a re-simulation of the NEST code. Please note that synchrony is about 10 folds different to that of the orinal paper (fig. \ref{fig:measure_NEST_org}), and I am working on to find out the reason. In addition, the synchrony using the implemented GLPD model (figs. \ref{fig:measure_GLPD_1} and \ref{fig:measure_GLPD_01}) was qualitatively similar to that of fig. \ref{fig:measure_NEST}, and may have quantitatively differed due to the slightly different synaptic dynamics (the original NEST implementation uses exponentially dacaying synaptic current, whereas GLPD uses delta synapses).
+
+
+*** Simulation time step of 1 ms
+
+#+BEGIN_SRC sh :export code
+time ./dGLPD_delta 98765 60000 1.0
+#+END_SRC
+
+#+BEGIN_SRC text
+Random Number Generator Engine: xoroshiro128+
+seed: 98765, Simulation time: 60000 ms, Simulation time step: 1 ms
+prepare: 370.132 s
+simulate(60000): 12721.2 s
+
+real	55m39.426s
+user	52m58.152s
+sys	1m4.037s
+#+END_SRC
+
+
+*** Simulation time step of 0.1 ms
+
+#+BEGIN_SRC sh :export code
+time ./dGLPD_delta 98765 60000 0.1
+#+END_SRC
+
+#+BEGIN_SRC text
+Random Number Generator Engine: xoroshiro128+
+seed: 98765, Simulation time: 60000 ms, Simulation time step: 0.1 ms
+prepare: 367.555 s
+simulate(60000): 12721.2 s
+
+real	218m9.308s
+user	214m54.626s
+sys	2m59.228s
+#+END_SRC
+
+
+\begin{figure}
+  \subfloat[NEST paper]{
+    \includegraphics[width=0.5\linewidth]{figures/PD_original_Fig6.png}
+    \label{fig:measure_NEST_org}
+  }
+  \subfloat[NEST sim]{
+    \includegraphics[width=0.5\linewidth]{figures/PD_nest.pdf}
+    \label{fig:measure_NEST}
+  }
+  \newline
+  \subfloat[$dt=1$ ms]{
+    \includegraphics[width=0.5\linewidth]{figures/dGLPD_delta_1.pdf}
+    \label{fig:measure_GLPD_1}
+  }
+  \subfloat[$dt=0.1$ ms]{
+    \includegraphics[width=0.5\linewidth]{figures/dGLPD_delta_01.pdf}
+    \label{fig:measure_GLPD_01}
+  }
+    \caption{Measures obtained from 60 sec of simulation ($dt=0.1$ ms). Dark colors indicate excitatory population, and light colors indicate inhibitory population. \textbf{Left:} raster plot of the last 400 ms. \textbf{Top right:} mean firing rate per cortical layer. \textbf{Center right:} Irregularity measured as the coefficient of variation (CV) of the interspike interval (ISI). \textbf{Bottom right:} The synchrony index is computed as the variance of the spike count histogram divided by its mean.}
+    \label{fig:measure_60}
+\end{figure}
+
+
 ** Storage of $V_m$ every 1.0 ms
 
-By changing the last argument in line 81 of =./src/main_dGLPD_delta.cpp= one can store analog data such as $V_t(i)$ of every neuron at every 1.0 ms interval. In such case, the simulation time for $dt=0.1$ and $dt=1.0$ are both about 15 min. This is expected asas writing data to file is a time-consuming process.
+By changing the last argument in line 81 of =./src/main_dGLPD_delta.cpp=, one can enable storage analog data such as $V_t(i)$ of every neuron at every 1.0 ms interval. In such case, the simulation time for $dt=0.1$ and $dt=1.0$ are both about 15 min. This is expected as writing data to file is a time-consuming process.
 
-** TODO
-Make other analysis:
-- firing rates
-- synchrony
+** TODO List of future tasks
+
 - cross-correlogram
-- CV
-- effect of considering the delay by PD and a fixed delay of 1 time step for simulations with 1ms time step.
+- effect of considering the delay by a fixed delay of 1 time step for simulations with 1ms time step.
   
-* References
-#+LaTeX: \printbibliography
+\bibliography{local}
 
