@@ -61,13 +61,13 @@ namespace stendhal
     spike_recorder.open(spike_recorder_file);
     spike_recorder << "# seed = " << seed << std::endl;
     spike_recorder << "# dt = " << sim_params.delta_t << std::endl;    
-    spike_recorder << "# step,  neuron_ID,  V_m (mV)" << std::endl;
+    spike_recorder << "# neuron_ID, step,  V_m (mV)" << std::endl;
     if (arec) {
       analog_rec = arec;
       analog_recorder.open(analog_recorder_file);
       analog_recorder << "# seed = " << seed << std::endl;
       analog_recorder << "# dt = " << sim_params.delta_t << std::endl;
-      analog_recorder << "# step, neuron_ID, V_m (mV), ePSC (pA), iPSC (pA), I_ext (pA), ePSP (mV), iPSP (mV), V_ext (mV)" << std::endl;
+      analog_recorder << "# neuron_ID, step, V_m (mV), ePSC (pA), iPSC (pA), I_ext (pA), ePSP (mV), iPSP (mV), V_ext (mV)" << std::endl;
     }
       
     
@@ -321,11 +321,11 @@ namespace stendhal
 	  V_spiked = neurons[i-1]->evaluate();  // returns V_m when the neuron spiked; 0.0 otherwise
 	  // store spike output to file when neuron spiked
 	  if (V_spiked != 0)
-	    spike_recorder << t << ", " << neurons[i-1]->get_id() << ", " << V_spiked << '\n';
+	    spike_recorder << neurons[i-1]->get_id() << ", " << t << ", " << V_spiked << '\n';
 	  // store analog data (membrane potentials and currents) to file
 	  if (is_analog_rec) {
-	    analog_recorder << t //
-			    << ", " << neurons[i-1]->get_id() // neuron ID
+	    analog_recorder << neurons[i-1]->get_id() // neuron ID
+			    << ", " << t // time step
 			    << ", " << neurons[i-1]->get_Vm() // membrane potential
 			    << ", " << neurons[i-1]->get_ePSC() // excitatory post synaptic current (ePSC) (mV)
 			    << ", " << neurons[i-1]->get_iPSC() // inhibitory post synaptic current (iPSC) (mV)
