@@ -49,6 +49,12 @@
 
 #+NAME: org-latex-set-up
 #+BEGIN_SRC emacs-lisp :results silent :exports none
+  ;; enable babel codeblock eval
+  (require 'ob-gnuplot)
+  (require 'ob-python)
+  (require 'ob-C)
+  (require 'ob-shell)
+  ;; set koma-article
   (with-eval-after-load 'ox-latex
     ;; if "koma-article" is already defined, remove it
     (delete (cl-find "koma-article" org-latex-classes :key 'car :test 'equal) org-latex-classes)
@@ -285,7 +291,7 @@ TODO: write about the code
 
 ** Compile
 
-#+BEGIN_SRC sh :export code
+#+BEGIN_SRC sh :export code :eval never
   unzip dGLPD_delta.zip
   mkdir bin
   cd bin
@@ -299,11 +305,11 @@ Execution time was measured using time command. I have also measured simulation 
 
 *** Simulation time step of 1.0 ms
 
-#+BEGIN_SRC sh :export code
+#+BEGIN_SRC sh :export code :eval never
 time ./dGLPD_delta 11111 1000 1.0
 #+END_SRC
 
-#+BEGIN_SRC text
+#+BEGIN_SRC text :eval never
 Random Number Generator Engine: xoroshiro128+
 seed: 11111, Simulation time: 1000 ms, Simulation time step: 1 ms
 prepare: 372.762 s
@@ -321,11 +327,11 @@ sys     0m21.554s
 
 *** Simulation time step of 0.1 ms
 
-#+BEGIN_SRC sh :export code
+#+BEGIN_SRC sh :export code :eval never
 time ./dGLPD_delta 11111 1000 0.1
 #+END_SRC
 
-#+BEGIN_SRC text
+#+BEGIN_SRC text :eval never
 Random Number Generator Engine: xoroshiro128+
 seed: 11111, Simulation time: 1000 ms, Simulation time step: 0.1 ms
 prepare: 362.266 s
@@ -343,12 +349,12 @@ sys     0m20.644s
 
 *** NEST 2.16, simulation time step 0.1 ms
 
-#+BEGIN_SRC sh :export code
+#+BEGIN_SRC sh :export code :eval never
   module load py36-nest/2.16.0
   time python3 example.py
 #+END_SRC
 
-#+BEGIN_SRC text
+#+BEGIN_SRC text :eval never
   Spike detectors created
   Thalamic input not provided
   Poisson background input created
@@ -379,12 +385,12 @@ sys     0m20.644s
 
 *** NEST 2.20.1, simulation time step 0.1 ms
 
-#+BEGIN_SRC sh :export code
+#+BEGIN_SRC sh :export code :eval never
   module load py36-nest/2.20.1
   time python3 example.py
 #+END_SRC
 
-#+BEGIN_SRC text
+#+BEGIN_SRC text :eval never
   Spike detectors created
   Thalamic input not provided
   Poisson background input created
@@ -419,14 +425,14 @@ For measuring memory usage, the code was compiled without optimization (-O0) wit
 
 *** Simulation time step of 1.0 ms
 
-#+BEGIN_SRC sh :export code
+#+BEGIN_SRC sh :export code :eval never
   cmake -DCMAKE_CXX_FLAGS=-g -Dwith-optimize=-O0 ../src
   make
   valgrind --tool=massif ./dGLPD_delta 1111 1000 1.0
   ms_print ./massif.out.18029
 #+END_SRC
 
-#+BEGIN_SRC text
+#+BEGIN_SRC text :eval never
   --------------------------------------------------------------------------------
   Command:            ./dGLPD_delta 12345 1000 1.0
   Massif arguments:   (none)
@@ -462,14 +468,14 @@ For measuring memory usage, the code was compiled without optimization (-O0) wit
 
 *** Simulation time step of 0.1 ms
 
-#+BEGIN_SRC sh :export code
+#+BEGIN_SRC sh :export code :eval never
   cmake -DCMAKE_CXX_FLAGS=-g -Dwith-optimize=-O0 ../src
   make
   valgrind --tool=massif ./dGLPD_delta 12345 1000 0.1
   ms_print ./massif.out.30417
 #+END_SRC
 
-#+BEGIN_SRC text
+#+BEGIN_SRC text :eval never
   --------------------------------------------------------------------------------
   Command:            ./dGLPD_delta 12345 1000 0.1
   Massif arguments:   (none)
@@ -509,11 +515,11 @@ The measures shown in figs. [[fig:measure_d1_t1]] and [[fig:measure_d01_t1]] was
 
 *** Simulation time step of 1 ms
 
-#+BEGIN_SRC sh :export code
+#+BEGIN_SRC sh :export code :eval never
 time ./dGLPD_delta 98765 60000 1.0
 #+END_SRC
 
-#+BEGIN_SRC text
+#+BEGIN_SRC text :eval never
 Random Number Generator Engine: xoroshiro128+
 seed: 98765, Simulation time: 60000 ms, Simulation time step: 1 ms
 prepare: 370.132 s
@@ -527,11 +533,11 @@ sys	1m4.037s
 
 *** Simulation time step of 0.1 ms
 
-#+BEGIN_SRC sh :export code
+#+BEGIN_SRC sh :export code :eval never
 time ./dGLPD_delta 98765 60000 0.1
 #+END_SRC
 
-#+BEGIN_SRC text
+#+BEGIN_SRC text :eval never
 Random Number Generator Engine: xoroshiro128+
 seed: 98765, Simulation time: 60000 ms, Simulation time step: 0.1 ms
 prepare: 367.555 s

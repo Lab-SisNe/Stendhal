@@ -45,14 +45,21 @@
 #+PROPERTY: header-args :eval no-export
 #+PROPERTY: header-args:python :results pp
 #+PROPERTY: header-args:gnuplot :session *gnuplot*
+#+LATEX_HEADER: \usepackage{multicol}
 
 #+NAME: org-latex-set-up
 #+BEGIN_SRC emacs-lisp :results silent :exports none
   ;; load ox-latex
   (require 'ox-latex)
   (require 'cl-lib)
+  ;; enable babel codeblock eval
+  (require 'ob-gnuplot)
+  (require 'ob-python)
+  (require 'ob-C)
+  (require 'ob-shell)
+  (setq org-babel-python-command "python3")
   ;; if "koma-article" is already defined, remove it
-  (delete (find "koma-article" org-latex-classes :key 'car :test 'equal) org-latex-classes)
+  (delete (cl-find "koma-article" org-latex-classes :key 'car :test 'equal) org-latex-classes)
   ;; add "koma-article" to list org-latex-classes
   (add-to-list 'org-latex-classes
                '("koma-article"
@@ -338,7 +345,7 @@ bin(18961)
 #+END_SRC
 
 #+RESULTS: spike-train-sequence-reprentation-bin
-: 0b100101000010001
+: '0b100101000010001'
 
 
 Notice here that the sequence starts (necessarily) with a =1= on the left (after the =0b= prefix). This implies that if we want to represent our spike train realizations with (unsigned) integers we must keep track of our sequence lengths in order to add extra =0= on the left side if necessary..  
@@ -353,7 +360,7 @@ bin(18961 << 1)
 #+END_SRC
 
 #+RESULTS: add-no-spike-event
-: 0b1001010000100010
+: '0b1001010000100010'
 
 To add a "spike" event we shift one =bit= to the left and add 1:
 
@@ -363,7 +370,7 @@ bin((18961 << 1)+1)
 #+END_SRC
 
 #+RESULTS: add-spike-event
-: 0b1001010000100011
+: '0b1001010000100011'
 
 *** Finding if there was a spike 5 steps ago
 If we want to know if there was a spike 5 steps ago, we make a right shift of 5 =bit= before making a bitwise =and= with =1=:
@@ -742,7 +749,7 @@ Here the generation of $8\times 10^8$ uniformly distributed real numbers in the 
 The code for drawing $8\times 10^8$ uniformly distriburted random number with the xoroshiro128+ generator:
 
 #+NAME: test-prng-xoroshiro128plus
-#+BEGIN_SRC C++ :tangle src/test_prng_xoroshiro128plus.cpp :flags -I ./src :exports code
+#+BEGIN_SRC C++ :tangle src/test_prng_xoroshiro128plus.cpp :flags -I ./src :exports code :eval never
   #include "xoroshiro128plus.hpp"
   #include <random>
 
@@ -768,7 +775,7 @@ The code for drawing $8\times 10^8$ uniformly distriburted random number with th
 Compiling the source code and measuring the execution time:
 
 #+NAME: execute-test-prng-xoroshiro128plus
-#+BEGIN_SRC sh :results output :exports both :session *bash
+#+BEGIN_SRC sh :results output :exports both :session *bash :eval never
 g++ ./src/test_prng_xoroshiro128plus.cpp -o ./src/run_test_prng_xoroshiro128plus
 time ./src/run_test_prng_xoroshiro128plus
 #+END_SRC
@@ -785,7 +792,7 @@ time ./src/run_test_prng_xoroshiro128plus
 The code for drawing $8\times 10^8$ uniformly distriburted random number with the mt19937 generator:
 
 #+NAME: test-prng-mt19937
-#+BEGIN_SRC C++ :tangle src/test_prng_mt19937.cpp :flags -I ./src :exports code
+#+BEGIN_SRC C++ :tangle src/test_prng_mt19937.cpp :flags -I ./src :exports code :eval never
   #include <random>
 
   std::mt19937 prng;
@@ -810,7 +817,7 @@ The code for drawing $8\times 10^8$ uniformly distriburted random number with th
 Compiling the source code and measuring the execution time:
 
 #+NAME: execute-test-prng-mt19937
-#+BEGIN_SRC sh :results output :exports both :session *bash
+#+BEGIN_SRC sh :results output :exports both :session *bash :eval never
 g++ ./src/test_prng_mt19937.cpp -o ./src/run_test_prng_mt19937
 time ./src/run_test_prng_mt19937
 #+END_SRC
