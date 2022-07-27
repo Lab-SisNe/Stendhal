@@ -39,7 +39,7 @@
 #+STARTUP: indent
 #+LaTeX_CLASS: koma-article
 #+LaTeX_CLASS_OPTIONS: [11pt]
-#+LaTeX_HEADER: \renewenvironment{verbatim}{\begin{alltt} \scriptsize \color{Bittersweet} \vspace{0.2cm} }{\vspace{0.2cm} \end{alltt} v\normalsize \color{black}}
+#+LaTeX_HEADER: \renewenvironment{verbatim}{\begin{alltt} \scriptsize \color{Bittersweet} \vspace{0.2cm} }{\vspace{0.2cm} \end{alltt} \normalsize \color{black}}
 #+LaTeX_HEADER: \definecolor{lightcolor}{gray}{.55}
 #+LaTeX_HEADER: \definecolor{shadecolor}{gray}{.95}
 #+PROPERTY: header-args :eval no-export
